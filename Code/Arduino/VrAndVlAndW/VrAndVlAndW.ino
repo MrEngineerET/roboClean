@@ -27,8 +27,9 @@ volatile unsigned long debounceL = 0;   // time stamp of the last bounce of the 
 volatile unsigned long debounceR = 0;   // time stamp of the last bounce of the incoming signal from the right encoder
 
 // DESIGN VARIABLE
-const byte delta = 100;    // sampling time of the system
-unsigned long lastTimeSample = 0; 
+const int delta = 100;    // sampling time of the system
+unsigned long currentTimeSample = 0;
+unsigned long previousTimeSample = 0; 
 
 // ODOMETRY VARIABLES
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
@@ -67,7 +68,9 @@ void setup () {
 }
 
 void loop () {
-  if(millis() - lastTimeSample > delta){
+  currentTimeSample = millis();
+  if(currentTimeSample - previousTimeSample > delta){
+     previousTimeSample = currentTimeSample;
     // calculate the distance traveled by both left and right wheel
       odometry();
     // calculating the velocity of both the left and the right wheel
@@ -76,24 +79,24 @@ void loop () {
     V = (Vr + Vl)/2;
     w = (Vr - Vl)/L;
       // for observing right wheel velocity and left wheel velocity
-      Serial.print(Vr); 
+      Serial.print(Vr*50); 
       Serial.print(" ");
-      Serial.println(Vl);;
+      Serial.println(Vl*50);
       // for observing the angular velocity of the robot
       // Serial.println(w);
        
-      lastTimeSample = millis();
+     
     }
 }
 
 void LEncoder () {// interrupt function of the left wheel encoder
-    if(micros()-debounceL > 500){
+    if(micros()-debounceL > 100){
         currentLeftEncoderPulses++;
         debounceL = micros();
     }
 }
 void REncoder () {// interrupt function of the right wheel encoder
-   if(micros()-debounceR > 500){
+   if(micros()-debounceR > 100){
         currentRightEncoderPulses++;
         debounceR = micros();
     }

@@ -28,7 +28,8 @@ volatile unsigned long debounceR = 0;   // time stamp of the last bounce of the 
 
 // DESIGN VARIABLE
 const byte delta = 100;    // sampling time of the system
-unsigned long lastTimeSample = 0; 
+unsigned long currentTimeSample = 0;
+unsigned long previousTimeSample = 0; 
 
 // DISTANCE AND VELOCITY MEASUREMENT VARIABLES
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
@@ -46,7 +47,9 @@ void setup () {
 }
 
 void loop () {
-  if(millis() - lastTimeSample > delta){
+  currentTimeSample = millis();
+  if(currentTimeSample - previousTimeSample > delta){
+      previousTimeSample = currentTimeSample;
     // calculate the distance traveled by both left and right wheel
       Dl = ((float)(currentLeftEncoderPulses-previousLeftEncoderPulses)/numberOfHole) * PI * diameter;
       Dr = ((float)(currentRightEncoderPulses-previousRightEncoderPulses)/numberOfHole) * PI * diameter;
@@ -57,8 +60,6 @@ void loop () {
       Serial.print(Dr); 
       Serial.print(" ");
       Serial.println(Dl);
-       
-      lastTimeSample = millis();
     }
 }
 

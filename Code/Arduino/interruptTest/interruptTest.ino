@@ -22,11 +22,11 @@ void setup () {
 
 void loop () {
   if(millis() - timeOld > 3000){
+      timeOld = millis();
       Serial.print("Left Count: ");
       Serial.println(leftEncoderPulses);  
       Serial.print("Right Count: ");
       Serial.println(rightEncoderPulses);  
-      timeOld = millis();
     }
 }
 

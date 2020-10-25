@@ -28,7 +28,8 @@ volatile unsigned long debounceR = 0;   // time stamp of the last bounce of the 
 
 // DESIGN VARIABLE
 const byte delta = 100;    // sampling time of the system
-unsigned long lastTimeSample = 0; 
+unsigned long currentTimeSample = 0;
+unsigned long previousTimeSample = 0;  
 
 // ODOMETRY VARIABLES
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
@@ -56,7 +57,9 @@ void setup () {
 }
 
 void loop () {
-  if(millis() - lastTimeSample > delta){
+  currentTimeSample = millis();
+  if(currentTimeSample - previousTimeSample > delta){
+      previousTimeSample = currentTimeSample;
     // calculate the distance traveled by both left and right wheel
       odometry();
 
@@ -67,8 +70,6 @@ void loop () {
       Serial.println(" ");
       // for observing the orientation of the robot
 //      Serial.println(phi);
-       
-      lastTimeSample = millis();
     }
 }
 
