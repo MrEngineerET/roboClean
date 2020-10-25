@@ -54,8 +54,8 @@ void setup () {
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
    delay(10000);
-   moveMotor(LEFT_WHEEL,FORWARD,100);
-   moveMotor(RIGHT_WHEEL,FORWARD,100);
+   moveMotor(LEFT_WHEEL,FORWARD,50);
+   moveMotor(RIGHT_WHEEL,FORWARD,50);
    // intializing the position and orientation of the robot
    x = 0;
    y = 0;
@@ -74,29 +74,28 @@ void loop () {
     // calculate the distance traveled by both left and right wheel
       odometry();
     // calculating the velocity of both the left and the right wheel
-    Vr = (float)Dr/delta;
-    Vl = (float)Dl/delta;
+    Vr = (float)(1000*Dr)/delta;
+    Vl = (float)(1000*Dl)/delta;
     V = (Vr + Vl)/2;
     w = (Vr - Vl)/L;
       // for observing right wheel velocity and left wheel velocity
-      Serial.print(Vr*50); 
+      Serial.print(Vr); 
       Serial.print(" ");
-      Serial.println(Vl*50);
+      Serial.println(Vl);
       // for observing the angular velocity of the robot
       // Serial.println(w);
-       
-     
+      
     }
 }
 
 void LEncoder () {// interrupt function of the left wheel encoder
-    if(micros()-debounceL > 100){
+    if(micros()- debounceL > 100){
         currentLeftEncoderPulses++;
         debounceL = micros();
     }
 }
 void REncoder () {// interrupt function of the right wheel encoder
-   if(micros()-debounceR > 100){
+   if(micros()- debounceR > 100){
         currentRightEncoderPulses++;
         debounceR = micros();
     }
