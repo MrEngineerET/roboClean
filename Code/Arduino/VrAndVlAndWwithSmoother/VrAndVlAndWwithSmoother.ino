@@ -89,7 +89,7 @@ void loop () {
 //        Serial.print(" ");
 //        Serial.println(Vr);
         Serial.print(x); 
-        Serial.print(" ");
+        Serial.print(",");
         Serial.println(y);
       // for observing the angular velocity of the robot
       // Serial.println(w);
