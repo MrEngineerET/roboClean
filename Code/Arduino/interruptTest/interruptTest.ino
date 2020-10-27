@@ -31,13 +31,13 @@ void loop () {
 }
 
 void LEncoder () {// interrupt function of the left wheel encoder
-    if(micros()-debounceL > 500){
+    if(digitalRead(leftEncoder) && (micros()- debounceL > 50) && digitalRead(leftEncoder)){
         leftEncoderPulses++;
         debounceL = micros();
     }
 }
 void REncoder () {// interrupt function of the right wheel encoder
-   if(micros()-debounceR > 500){
+   if(digitalRead(rightEncoder) && (micros()- debounceR > 50) && digitalRead(rightEncoder)){
         rightEncoderPulses++;
         debounceR = micros();
     }
