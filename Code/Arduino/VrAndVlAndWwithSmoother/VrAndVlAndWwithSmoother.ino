@@ -28,7 +28,7 @@ volatile unsigned long debounceL = 0;   // time stamp of the last bounce of the 
 volatile unsigned long debounceR = 0;   // time stamp of the last bounce of the incoming signal from the right encoder
 
 // DESIGN VARIABLE
-const int delta = 10;    // sampling time of the system
+const int delta = 100;    // sampling time of the system
 unsigned long currentTimeSample = 0;
 unsigned long previousTimeSample = 0; 
 
@@ -36,12 +36,12 @@ unsigned long previousTimeSample = 0;
 #define ARRAYSIZE 10
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
 const float diameter = 6.8; // the radius of left and right wheels[cm]
-int Dl = 0; // the latest value of distance moved by the left wheel
-int arrDl[ARRAYSIZE]; // array for holding the latest distance moved by the left wheel(Dl) and some other past values
-int meanDl = 0; // the mean value of the Dl array
-int Dr = 0; // the latest value of distance moved by the right wheel
-int arrDr[ARRAYSIZE]; // array for holding the latest distance moved by the right wheel(Dl) and some other past values
-int meanDr = 0; // the mean value of the Dr array
+float Dl = 0; // the latest value of distance moved by the left wheel
+float arrDl[ARRAYSIZE]; // array for holding the latest distance moved by the left wheel(Dl) and some other past values
+float meanDl = 0; // the mean value of the Dl array
+float Dr = 0; // the latest value of distance moved by the right wheel
+float arrDr[ARRAYSIZE]; // array for holding the latest distance moved by the right wheel(Dl) and some other past values
+float meanDr = 0; // the mean value of the Dr array
 float Dc = 0;
 float x;  // the x position of the robot
 float y;  // the y postition of the robot
@@ -59,7 +59,7 @@ void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
-   delay(10000);
+   delay(5000);
    moveMotor(LEFT_WHEEL,FORWARD,50);
    moveMotor(RIGHT_WHEEL,FORWARD,50);
    // intializing the position and orientation of the robot
@@ -85,12 +85,12 @@ void loop () {
         V = (Vr + Vl)/2;
         w = (Vr - Vl)/L;
       // for observing right wheel velocity and left wheel velocity
-//        Serial.print(Vl); 
-//        Serial.print(" ");
-//        Serial.println(Vr);
-        Serial.print(x); 
-        Serial.print(",");
-        Serial.println(y);
+        Serial.print(Vr); 
+        Serial.print(", ");
+        Serial.println(Vl);
+//        Serial.print(x); 
+//        Serial.print(",");
+//        Serial.println(y);
       // for observing the angular velocity of the robot
       // Serial.println(w);
     }

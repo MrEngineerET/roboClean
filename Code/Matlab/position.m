@@ -9,10 +9,12 @@ warning('off','MATLAB:serial:fscanf:unsuccessfulread');
 
 fopen(serial_port);
 
+plot(100,100,'or');
+hold on;
 sample_counter = 1;
-while sample_counter <= 800
-   potentiometer_value = fscanf(serial_port);
-    C = strsplit(potentiometer_value, ',');
+while sample_counter <= 400
+   value = fscanf(serial_port);
+    C = strsplit(value, ',');
     len = size(C);
     len = len(2);
     if len == 2

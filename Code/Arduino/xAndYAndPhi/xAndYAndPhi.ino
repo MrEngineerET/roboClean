@@ -34,8 +34,8 @@ unsigned long previousTimeSample = 0;
 // ODOMETRY VARIABLES
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
 const float diameter = 6.8; // the radius of left and right wheels[cm]
-unsigned long Dl = 0;
-unsigned long Dr = 0;
+float Dl = 0;
+float Dr = 0;
 float Dc = 0;
 float x;  // the x position of the robot
 float y;  // the y postition of the robot
@@ -47,9 +47,9 @@ void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
-   delay(10000);
-   moveMotor(LEFT_WHEEL,FORWARD,0);
-   moveMotor(RIGHT_WHEEL,FORWARD,60);
+   delay(5000);
+   moveMotor(LEFT_WHEEL,FORWARD,50);
+   moveMotor(RIGHT_WHEEL,FORWARD,50);
    // intializing the position and orientation of the robot
    x = 0;
    y = 0;
@@ -65,9 +65,8 @@ void loop () {
 
       // for observing position x and y
       Serial.print(x); 
-      Serial.print(" ");
-      Serial.print(y);
-      Serial.println(" ");
+      Serial.print(",");
+      Serial.println(y);
       // for observing the orientation of the robot
 //      Serial.println(phi);
     }

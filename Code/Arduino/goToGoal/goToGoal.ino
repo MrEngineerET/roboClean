@@ -28,7 +28,7 @@ volatile unsigned long debounceL = 0;   // time stamp of the last bounce of the 
 volatile unsigned long debounceR = 0;   // time stamp of the last bounce of the incoming signal from the right encoder
 
 // DESIGN VARIABLE
-const int delta = 50;    // sampling time of the system
+const int delta = 100;    // sampling time of the system
 unsigned long currentTimeSample = 0;
 unsigned long previousTimeSample = 0; 
 
@@ -37,43 +37,48 @@ unsigned long previousTimeSample = 0;
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
 const float diameter = 6.8; // the radius of left and right wheels[cm]
 float Dl = 0; // the latest value of distance moved by the left wheel
-int arrDl[ARRAYSIZE]; // array for holding the latest distance moved by the left wheel(Dl) and some other past values
+float arrDl[ARRAYSIZE]; // array for holding the latest distance moved by the left wheel(Dl) and some other past values
 float meanDl = 0; // the mean value of the Dl array
 float Dr = 0; // the latest value of distance moved by the right wheel
-int arrDr[ARRAYSIZE]; // array for holding the latest distance moved by the right wheel(Dl) and some other past values
+float arrDr[ARRAYSIZE]; // array for holding the latest distance moved by the right wheel(Dl) and some other past values
 float meanDr = 0; // the mean value of the Dr array
 float Dc = 0;
-float x;  // the x position of the robot
-float y;  // the y postition of the robot
-float phi; // the orientation of the robot
+float x = 0;  // the x position of the robot
+float y = 0;  // the y postition of the robot
+float phi = 0; // the orientation of the robot
 const float L = 13.4; // length of the robot between tires[cm]
 
 // ROBOT INPUT VARIABLE
-float V;  // the overall velocity of the robot
-float Vr; // the velocity of the right wheel
-float Vl; // the velocity of the left wheel
-float w;  // the angular velocity og the robot
+float V = 0;  // the overall velocity of the robot [cm/sec]
+float Vr = 0; // the velocity of the right wheel
+float Vl = 0; // the velocity of the left wheel
+float W = 0;  // the angular velocity og the robot
 
-// ROBOT INPUT VARIABLE CONTROLLED BY PID
+// ROBOT INPUT VARIABLE CONTROLLED BY PID (GO TO GOAL)
 float Xg; // the x axis goal position of the robot
 float Yg; // the y axis goal position of the robot
+float phid = 0; 
+float phiErr = 0;
+float phiErrOld = 0;
+float phiErrSum = 0;
+int Kp = 3;
+int Ki = 1;
+int Kd = 1;
+const int PWMmax = 100;
+const int PWMmin = 35;
+const int robotMaxSpeed = 150;  // [cm/s]
+const int robotMinSpeed = 30; // [cm/s]
 
 void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
-   delay(5000);
-   moveMotor(LEFT_WHEEL,FORWARD,100);
+   moveMotor(LEFT_WHEEL,FORWARD,0);
    moveMotor(RIGHT_WHEEL,FORWARD,0);
-   // intializing the position and orientation of the robot
-   x = 0;
-   y = 0;
-   phi = 0;
-   //initializing robot input variable
-   V = 0;
-   Vr = 0;
-   Vl = 0;
-   w = 0;  
+   delay(5000);
+   Xg = 100; 
+   Yg = 100;
+   V = 60;
 }
 
 void loop () {
@@ -81,21 +86,42 @@ void loop () {
   if(currentTimeSample - previousTimeSample > delta){
      previousTimeSample = currentTimeSample;
     // calculate the distance traveled by both left and right wheel
-      odometry();
+     odometry();
+     goToGoal();
     // calculating the velocity of both the left and the right wheel
-        Vr = (float)(1000*meanDr)/delta;
-        Vl = (float)(1000*meanDl)/delta;
-        V = (Vr + Vl)/2;
-        w = (Vr - Vl)/L;
+//        Vr = (float)(1000*meanDr)/delta;
+//        Vl = (float)(1000*meanDl)/delta;
+//        V = (Vr + Vl)/2;
+//        W = (Vr - Vl)/L;
       // for observing right wheel velocity and left wheel velocity
-        Serial.print(Vl); 
-        Serial.print(" ");
-        Serial.println(Vr);
+//        Serial.print(Vl); 
+//        Serial.print(" ");
+//        Serial.println(Vr);
+
+        Serial.print(x); 
+        Serial.print(",");
+        Serial.println(y);
+
+//        Serial.print(", ");
+//        Serial.print(phid); 
+//        Serial.print(phiErr); 
+//        Serial.print(", ");
+//        Serial.print(W); 
+//        Serial.print(", ");
+//        Serial.print(Vl); 
+//        Serial.print(", ");
+//        Serial.print(Vr); 
+//        Serial.print(", ");        
+//        Serial.print(leftMotorSpeed); 
+//        Serial.print(", ");
+//        Serial.print(rightMotorSpeed);
+//        Serial.print(", ");        
 //        Serial.print(x); 
-//        Serial.print(",");
+//        Serial.print(", ");
 //        Serial.println(y);
+        
       // for observing the angular velocity of the robot
-      // Serial.println(w);
+      // Serial.println(W);
     }
 }
 
@@ -159,4 +185,21 @@ void odometry(){
   y = y + Dc*sin(phi);
   phi = phi + (Dr - Dl)/L;
   phi = atan2(sin(phi),cos(phi));
+}
+
+void goToGoal(){
+   if(abs(Xg - x) < 5 && abs(Yg - y) < 5){
+      moveMotor(LEFT_WHEEL,FORWARD,0);
+      moveMotor(RIGHT_WHEEL,FORWARD,0);
+      return;
+   }
+  phid = atan2(Yg-y,Xg-x);
+  phiErr = phid - phi;
+  W = Kp * phiErr;
+  Vl = (2*V - W*L)/2;
+  Vr = (2*V + W*L)/2;
+  leftMotorSpeed = map(Vl,robotMinSpeed,robotMaxSpeed,PWMmin,PWMmax);
+  rightMotorSpeed = map(Vr,robotMinSpeed,robotMaxSpeed,PWMmin,PWMmax);
+  moveMotor(LEFT_WHEEL,FORWARD,leftMotorSpeed);
+  moveMotor(RIGHT_WHEEL,FORWARD,rightMotorSpeed);
 }

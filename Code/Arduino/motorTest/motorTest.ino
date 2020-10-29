@@ -17,7 +17,7 @@ void loop() {
   if(Serial.available() > 0){
       mspeed = Serial.readString().toInt();
       Serial.println(mspeed);
-      moveMotor(LEFT_WHEEL,BACKWARD,mspeed);
+      moveMotor(LEFT_WHEEL,FORWARD,mspeed);
       moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
       delay(3000);
     }
