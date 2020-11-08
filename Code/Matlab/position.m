@@ -1,6 +1,5 @@
-close all;
+clear;
 clc;
-y = zeros(1,1000);
 
 delete(instrfind({'Port'},{'COM9'}));
 serial_port = serial('COM9', 'Terminator', 'CR/LF');
@@ -9,28 +8,31 @@ warning('off','MATLAB:serial:fscanf:unsuccessfulread');
 
 fopen(serial_port);
 
-plot(100,100,'or');
+figure
+plot(0,0,'or');
+plot(300,300,'or');
 hold on;
-sample_counter = 1;
-while sample_counter <= 400
-   value = fscanf(serial_port);
-    C = strsplit(value, ',');
-    len = size(C);
+counter = 1;
+while counter <= 200
+   str = fscanf(serial_port);
+    values = strsplit(str, ',');
+    len = size(values);
     len = len(2);
-    if len == 2
-         X = str2num(C{1});
-         Y = str2num(C{2});
-    % phi = str2num (C {3});
-    % Phid = str2num (C {4});
-    % error = str2num (C {5});
-    % Rdistance = str2num (C {6});
-    % Ldistance = str2num (C {7});
-         sample_counter = sample_counter + 1;
-         plot(X, Y, '*')
+    if len == 4
+         x = str2num(values{1});
+         y = str2num(values{2});
+    % phi = str2num (values {3});
+    % Phid = str2num (values {4});
+    % error = str2num (values {5});
+    % Rdistance = str2num (values {6});
+    % Ldistance = str2num (values {7});
+         counter = counter + 1;
+         plot(x, y, '*')
          pause(0.01);
          hold on
         % [phi, Phid, error]
      end
 end
-
+hold off;
 fclose(serial_port);
+clear;

@@ -62,8 +62,8 @@ float phiErr = 0;
 float phiErrOld = 0;
 float phiErrSum = 0;
 float Kp = 2;
-float Ki = 0.01;
-float Kd = 0.01;
+float Ki = 0.05;
+float Kd = 0;
 const int PWMmax = 100;
 const int PWMmin = 35;
 const int robotMaxSpeed = 150;  // [cm/s]
@@ -76,8 +76,8 @@ void setup () {
    moveMotor(LEFT_WHEEL,FORWARD,0);
    moveMotor(RIGHT_WHEEL,FORWARD,0);
    delay(5000);
-   Xg = 100; 
-   Yg = 100;
+   Xg = 300; 
+   Yg = 300;
    V = 60;
 }
 
@@ -85,19 +85,11 @@ void loop () {
   currentTimeSample = millis();
   if(currentTimeSample - previousTimeSample > delta){
      previousTimeSample = currentTimeSample;
-    // calculate the distance traveled by both left and right wheel
+    
      odometry();
+    
      goToGoal();
-    // calculating the velocity of both the left and the right wheel
-//        Vr = (float)(1000*meanDr)/delta;
-//        Vl = (float)(1000*meanDl)/delta;
-//        V = (Vr + Vl)/2;
-//        W = (Vr - Vl)/L;
-      // for observing right wheel velocity and left wheel velocity
-//        Serial.print(Vl); 
-//        Serial.print(" ");
-//        Serial.println(Vr);
-
+    
         Serial.print(x); 
         Serial.print(",");
         Serial.print(y);
@@ -106,8 +98,9 @@ void loop () {
         Serial.print(",");
         Serial.println(phi); 
 
-//        Serial.print(", ");
+//        
 //        Serial.print(phid); 
+//        Serial.print(", ");
 //        Serial.print(phiErr); 
 //        Serial.print(", ");
 //        Serial.print(W); 
@@ -192,7 +185,7 @@ void odometry(){
 }
 
 void goToGoal(){
-   if(abs(Xg - x) < 5 && abs(Yg - y) < 5){
+   if(abs(Xg - x) < 10 && abs(Yg - y) < 10){
       moveMotor(LEFT_WHEEL,FORWARD,0);
       moveMotor(RIGHT_WHEEL,FORWARD,0);
       return;
@@ -200,6 +193,14 @@ void goToGoal(){
   phid = atan2(Yg-y,Xg-x);
   phiErr = phid - phi;
   phiErrSum += phiErr;
+  if(phiErr < PI/8 && phiErr > -PI/8){
+    Serial.println("here");
+    smallPhiErrorController();
+  }else{
+    largePhiErrorController();
+  }
+}
+float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
   W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/delta);
   phiErrOld = phiErr;
   Vl = (2*V - W*L)/2;
@@ -208,4 +209,18 @@ void goToGoal(){
   rightMotorSpeed = map(Vr,robotMinSpeed,robotMaxSpeed,PWMmin,PWMmax);
   moveMotor(LEFT_WHEEL,FORWARD,leftMotorSpeed);
   moveMotor(RIGHT_WHEEL,FORWARD,rightMotorSpeed);
+}
+
+float largePhiErrorController(){ // for phiError > pi/8 or phiError < -phi/8
+  if(phiErr >= PI/8){
+    // move the robot in counter clockwise  
+     moveMotor(LEFT_WHEEL,FORWARD,0);
+     moveMotor(RIGHT_WHEEL,FORWARD,PWMmin);
+  }else if(phiErr <=-PI/8){
+    // move the robot in clockwise
+     moveMotor(LEFT_WHEEL,FORWARD,PWMmin);
+     moveMotor(RIGHT_WHEEL,FORWARD,0);
+  }
+    phiErrSum = 0;
+    phiErrOld = 0;
 }
