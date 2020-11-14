@@ -3,7 +3,8 @@
 #define LEFT_WHEEL 1
 #define RIGHT_WHEEL 2
 
-int mspeed=0;
+#define switchPin 22
+int mspeed=150;
 
 AF_DCMotor leftWheel(3);
 AF_DCMotor rightWheel(4);
@@ -11,16 +12,27 @@ AF_DCMotor rightWheel(4);
 void setup() {
  Serial.begin(9600);
  Serial.println("Enter a number between 0 and 255 to move the motor");
+ pinMode(switchPin,INPUT_PULLUP);
+      
 }
 
 void loop() {
-  if(Serial.available() > 0){
-      mspeed = Serial.readString().toInt();
-      Serial.println(mspeed);
-      moveMotor(LEFT_WHEEL,FORWARD,mspeed);
-      moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
-      delay(3000);
-    }
+//  if(Serial.available() > 0){
+//      mspeed = Serial.readString().toInt();
+//      Serial.println(mspeed);
+//      moveMotor(LEFT_WHEEL,FORWARD,mspeed);
+//      moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
+//      delay(3000);
+//    }
+  if(digitalRead(switchPin) == 1){
+    moveMotor(LEFT_WHEEL,FORWARD,0);
+    moveMotor(RIGHT_WHEEL,FORWARD,0);
+    delay(10000);
+ }else{
+    moveMotor(LEFT_WHEEL,FORWARD,mspeed);
+    moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
+ }
+ Serial.println(digitalRead(switchPin));
 }
 
 void moveMotor(int WHEEL,int DIRECTION, int mSpeed){

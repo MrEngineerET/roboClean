@@ -8,7 +8,6 @@
 // MOTOR VARIABLES
 #define LEFT_WHEEL 1
 #define RIGHT_WHEEL 2
-#define switchPin 22
 
 //LEFT WHEEL VARIABLES
 int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
@@ -63,12 +62,17 @@ float phiErr = 0;
 float phiErrOld = 0;
 float phiErrSum = 0;
 float Kp = 2;
-float Ki = 0.01;
-float Kd = 0.01;
-const int PWMmax = 150;
-const int PWMmin = 80;
-const int robotMaxSpeed = 80;  // [cm/s]
-const int robotMinSpeed = 35; // [cm/s]
+float Ki = 0.05;
+float Kd = 0;
+// VALUES FOUND BY EMPIRICAL EXPERMENT
+const int PWMmax = 100;
+const int PWMmin = 35;
+const int Vmax = 150;  // [cm/s]
+
+const int Wmax_V0 = 60;  // [cm/s]
+const int Vmax_W0 = 150;  // [cm/s]
+const int robotMaxSpeed = 150;  // [cm/s]
+const int robotMinSpeed = 30; // [cm/s]
 
 void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
@@ -76,60 +80,32 @@ void setup () {
    Serial.begin(9600); // start of serial communication
    moveMotor(LEFT_WHEEL,FORWARD,0);
    moveMotor(RIGHT_WHEEL,FORWARD,0);
-   pinMode(switchPin,INPUT_PULLUP);
-  initialize();
-  delay(10000);
+   delay(5000);
+   Xg = 300; 
+   Yg = 300;
+   V = 60;
 }
 
-void initialize(){
-   Xg = 100; 
-   Yg = 100;
-   V = 50;
-   phid = 0; 
-   phiErr = 0;
-   phiErrOld = 0;
-   phiErrSum = 0;
-   V = 0;  
-   Vr = 0; 
-   Vl = 0;
-   W = 0; 
-   currentTimeSample = 0;
-   previousTimeSample = 0; 
-}
 void loop () {
-  if(digitalRead(switchPin) == 1){
-      initialize();
-      delay(10000);
-   }else{
-     currentTimeSample = millis();
-     if(currentTimeSample - previousTimeSample > delta){
-       previousTimeSample = currentTimeSample;
-      // calculate the distance traveled by both left and right wheel
-       odometry();
-       goToGoal();
-   }
-  
-  
-    // calculating the velocity of both the left and the right wheel
-//        Vr = (float)(1000*meanDr)/delta;
-//        Vl = (float)(1000*meanDl)/delta;
-//        V = (Vr + Vl)/2;
-//        W = (Vr - Vl)/L;
-      // for observing right wheel velocity and left wheel velocity
-//        Serial.print(Vl); 
-//        Serial.print(" ");
-//        Serial.println(Vr);
+  currentTimeSample = millis();
+  if(currentTimeSample - previousTimeSample > delta){
+     previousTimeSample = currentTimeSample;
+    
+     odometry();
+    
+     goToGoal();
+    
+        Serial.print(x); 
+        Serial.print(",");
+        Serial.print(y);
+        Serial.print(","); 
+        Serial.print((float)millis()/1000);
+        Serial.print(",");
+        Serial.println(phi); 
 
-//        Serial.print(x); 
-//        Serial.print(",");
-//        Serial.print(y);
-//        Serial.print(","); 
-//        Serial.print((float)millis()/1000);
-//        Serial.print(",");
-//        Serial.println(phi); 
-
-//        Serial.print(", ");
+//        
 //        Serial.print(phid); 
+//        Serial.print(", ");
 //        Serial.print(phiErr); 
 //        Serial.print(", ");
 //        Serial.print(W); 
@@ -213,21 +189,77 @@ void odometry(){
   phi = atan2(sin(phi),cos(phi));
 }
 
+void avoidObstacle(){
+  
+}
+
 void goToGoal(){
-   if(abs(Xg - x) < 5 && abs(Yg - y) < 5){
+   if(abs(Xg - x) < 10 && abs(Yg - y) < 10){
       moveMotor(LEFT_WHEEL,FORWARD,0);
       moveMotor(RIGHT_WHEEL,FORWARD,0);
       return;
    }
   phid = atan2(Yg-y,Xg-x);
   phiErr = phid - phi;
-  phiErrSum += phiErr;
+  phiErrSum += phiErr * delta/1000;
+  if(phiErr < PI/8 && phiErr > -PI/8){
+    smallPhiErrorController();
+  }else{
+    largePhiErrorController();
+  }
+}
+float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
+  // PID controller for angular velocity of the robot
   W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/delta);
   phiErrOld = phiErr;
-  Vl = (2*V - W*L)/2;
-  Vr = (2*V + W*L)/2;
+  
+  // validate if the angular velocity is ensured
+  ensure_W();
+
   leftMotorSpeed = map(Vl,robotMinSpeed,robotMaxSpeed,PWMmin,PWMmax);
   rightMotorSpeed = map(Vr,robotMinSpeed,robotMaxSpeed,PWMmin,PWMmax);
   moveMotor(LEFT_WHEEL,FORWARD,leftMotorSpeed);
   moveMotor(RIGHT_WHEEL,FORWARD,rightMotorSpeed);
+}
+
+float largePhiErrorController(){ // for phiError > pi/8 or phiError < -phi/8
+  if(phiErr >= PI/8){
+    // move the robot in counter clockwise  
+     moveMotor(LEFT_WHEEL,FORWARD,0);
+     moveMotor(RIGHT_WHEEL,FORWARD,PWMmin);
+  }else if(phiErr <=-PI/8){
+    // move the robot in clockwise
+     moveMotor(LEFT_WHEEL,FORWARD,PWMmin);
+     moveMotor(RIGHT_WHEEL,FORWARD,0);
+  }
+    phiErrSum = 0;
+    phiErrOld = 0;
+}
+
+void ensure_W(){
+  // This function ensures that w is respected as best as possible
+  // by sacrificing v. 
+            
+  // 1. Limit v,w from controller to +/- of their max
+  V = max(min(V ,Vmax_W0), -Vmax_W0);
+  W = max(min(W, Wmax_V0), -Wmax_V0);
+   // unicycle( v,w) to differential (Vl,Vr)
+  float Vl_d = (2*V - W*L)/2;
+  float Vr_d = (2*V + W*L)/2;
+  //  Find the max and min 
+  float V_rl_max = max(Vr_d, Vl_d);
+  float V_rl_min = min(Vr_d, Vl_d);
+  
+  //  Shift vel_r and vel_l if they exceed max/min vel
+  if(V_rl_max > Vmax){
+    Vl = Vl_d - (V_rl_max - Vmax);
+    Vr = Vr_d - (V_rl_max - Vmax);
+  }else if(V_rl_min < -Vmax){
+    Vl = Vl_d - (V_rl_min + Vmax);  
+    Vr = Vr_d - (V_rl_min + Vmax);
+  }else {
+    Vl = Vl_d;
+    Vr = Vr_d;  
+  }
+  
 }

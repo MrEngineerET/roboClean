@@ -194,15 +194,16 @@ void goToGoal(){
   phiErr = phid - phi;
   phiErrSum += phiErr;
   if(phiErr < PI/8 && phiErr > -PI/8){
-    Serial.println("here");
     smallPhiErrorController();
   }else{
     largePhiErrorController();
   }
 }
 float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
+  // PID controller for angular velocity of the robot
   W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/delta);
   phiErrOld = phiErr;
+  // unicycle( v,w) to differential (Vl,Vr)
   Vl = (2*V - W*L)/2;
   Vr = (2*V + W*L)/2;
   leftMotorSpeed = map(Vl,robotMinSpeed,robotMaxSpeed,PWMmin,PWMmax);
