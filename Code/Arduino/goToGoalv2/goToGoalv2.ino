@@ -117,7 +117,7 @@ void loop () {
 //          Serial.print(", ");        
 //          Serial.print(leftMotorSpeed); 
 //          Serial.print(", ");
-//          Serial.print(rightMotorSpeed);
+//          Serial.println(rightMotorSpeed);
   //        Serial.print(", ");        
   //        Serial.print(x); 
   //        Serial.print(", ");

@@ -10,7 +10,6 @@ void setup() {
 
 void loop() {
   Serial2.println("message from arduino");
-  delay(3000);
   if(Serial2.available()>0){
     Serial.println(Serial2.readString());
     }

@@ -79,6 +79,7 @@ void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
+   Serial2.begin(9600);
    delay(3000);
    moveMotor(LEFT_WHEEL,FORWARD,0);
    moveMotor(RIGHT_WHEEL,FORWARD,0);
@@ -101,14 +102,24 @@ void loop () {
        odometry();
       
        goToGoal();
-  
-      Serial.print(x); 
-      Serial.print(",");
-      Serial.print(y);
-      Serial.print(","); 
-      Serial.print((float)millis()/1000);
-      Serial.print(",");
-      Serial.println(phi); 
+//  
+      Serial2.print(x); 
+      Serial2.print(",");
+      Serial2.print(y);
+      Serial2.print(","); 
+      Serial2.print((float)millis()/1000);
+      Serial2.print(",");
+      Serial2.println(phi); 
+
+//        Serial2.println("message from go to goal wireless");
+
+//      Serial.print(x); 
+//      Serial.print(",");
+//      Serial.print(y);
+//      Serial.print(","); 
+//      Serial.print((float)millis()/1000);
+//      Serial.print(",");
+//      Serial.println(phi); 
 
   //        Serial.print(phid); 
   //        Serial.print(", ");

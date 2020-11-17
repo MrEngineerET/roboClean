@@ -7,13 +7,10 @@ void setup() {
   toArduino.begin(9600);
   delay(2000);
   Serial.println("Message is about to recieve from arduino");
-
 }
 
 void loop() {
   if(toArduino.available() > 0){
-      Serial.println(toArduino.readString());
-      toArduino.println("message recieved");
+      Serial.println(toArduino.readStringUntil('\n'));
   }
-
 }
