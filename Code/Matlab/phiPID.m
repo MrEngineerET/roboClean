@@ -11,7 +11,7 @@ warning('off','MATLAB:serial:fscanf:unsuccessfulread');
 fopen(serial_port);
 figure;
 counter = 1;
-while counter < 200
+while counter < 100
    str = fscanf(serial_port);
    values = strsplit(str,',');
    time = str2num(values{3});

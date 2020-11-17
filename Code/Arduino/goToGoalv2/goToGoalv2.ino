@@ -8,6 +8,7 @@
 // MOTOR VARIABLES
 #define LEFT_WHEEL 1
 #define RIGHT_WHEEL 2
+#define switchPin 22
 
 //LEFT WHEEL VARIABLES
 int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
@@ -65,7 +66,7 @@ float Kp = 2;
 float Ki = 0.05;
 float Kd = 0;
 const int PWMmax = 100;
-const int PWMmin = 35;
+const int PWMmin = 40;
 const int robotMaxSpeed = 150;  // [cm/s]
 const int robotMinSpeed = 30; // [cm/s]
 
@@ -73,53 +74,73 @@ void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
+   delay(3000);
    moveMotor(LEFT_WHEEL,FORWARD,0);
    moveMotor(RIGHT_WHEEL,FORWARD,0);
-   delay(5000);
-   Xg = 300; 
-   Yg = 300;
-   V = 60;
+   pinMode(switchPin,INPUT_PULLUP);
+   initialize();
+   delay(3000);
 }
 
 void loop () {
-  currentTimeSample = millis();
-  if(currentTimeSample - previousTimeSample > delta){
-     previousTimeSample = currentTimeSample;
-    
-     odometry();
-    
-     goToGoal();
-    
-        Serial.print(x); 
-        Serial.print(",");
-        Serial.print(y);
-        Serial.print(","); 
-        Serial.print((float)millis()/1000);
-        Serial.print(",");
-        Serial.println(phi); 
+   if(digitalRead(switchPin) == 1){
+      moveMotor(LEFT_WHEEL,FORWARD,0);
+      moveMotor(RIGHT_WHEEL,FORWARD,0);
+      initialize();
+      delay(3000);
+   }else{
+    currentTimeSample = millis();
+    if(currentTimeSample - previousTimeSample > delta){
+       previousTimeSample = currentTimeSample;
+      
+       odometry();
+      
+       goToGoal();
+      
+          Serial.print(x); 
+          Serial.print(",");
+          Serial.print(y);
+          Serial.print(","); 
+          Serial.print((float)millis()/1000);
+          Serial.print(",");
+          Serial.println(phi); 
 
-//        
-//        Serial.print(phid); 
-//        Serial.print(", ");
-//        Serial.print(phiErr); 
-//        Serial.print(", ");
-//        Serial.print(W); 
-//        Serial.print(", ");
-//        Serial.print(Vl); 
-//        Serial.print(", ");
-//        Serial.print(Vr); 
-//        Serial.print(", ");        
-//        Serial.print(leftMotorSpeed); 
-//        Serial.print(", ");
-//        Serial.print(rightMotorSpeed);
-//        Serial.print(", ");        
-//        Serial.print(x); 
-//        Serial.print(", ");
-//        Serial.println(y);
-        
-      // for observing the angular velocity of the robot
-      // Serial.println(W);
-    }
+  //        Serial.print(phid); 
+  //        Serial.print(", ");
+  //        Serial.print(phiErr); 
+  //        Serial.print(", ");
+  //        Serial.print(W); 
+  //        Serial.print(", ");
+//          Serial.print(Vl); 
+//          Serial.print(", ");
+//          Serial.print(Vr); 
+//          Serial.print(", ");        
+//          Serial.print(leftMotorSpeed); 
+//          Serial.print(", ");
+//          Serial.print(rightMotorSpeed);
+  //        Serial.print(", ");        
+  //        Serial.print(x); 
+  //        Serial.print(", ");
+  //        Serial.println(y);
+          
+        // for observing the angular velocity of the robot
+        // Serial.println(W);
+      }
+   }
+}
+void initialize(){
+   Xg = 100; 
+   Yg = 100;
+   V = 60;
+   phid = 0; 
+   phiErr = 0;
+   phiErrOld = 0;
+   phiErrSum = 0; 
+   Vr = 0; 
+   Vl = 0;
+   W = 0; 
+   currentTimeSample = 0;
+   previousTimeSample = 0; 
 }
 
 void LEncoder () {// interrupt function of the left wheel encoder
@@ -185,14 +206,16 @@ void odometry(){
 }
 
 void goToGoal(){
-   if(abs(Xg - x) < 10 && abs(Yg - y) < 10){
+   if(abs(Xg - x) < 5 && abs(Yg - y) < 5){
       moveMotor(LEFT_WHEEL,FORWARD,0);
       moveMotor(RIGHT_WHEEL,FORWARD,0);
       return;
    }
   phid = atan2(Yg-y,Xg-x);
   phiErr = phid - phi;
+  phiErr = atan2(sin(phiErr),cos(phiErr));
   phiErrSum += phiErr;
+  phiErrSum = atan2(sin(phiErrSum),cos(phiErrSum));
   if(phiErr < PI/8 && phiErr > -PI/8){
     smallPhiErrorController();
   }else{

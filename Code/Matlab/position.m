@@ -10,22 +10,23 @@ fopen(serial_port);
 
 figure
 plot(0,0,'or');
-plot(300,300,'or');
+hold on;
+plot(100,100,'or');
+hold on;
+plot(110,110);
 hold on;
 counter = 1;
-while counter <= 200
+while counter <= 100
    str = fscanf(serial_port);
     values = strsplit(str, ',');
     len = size(values);
     len = len(2);
     if len == 4
-         x = str2num(values{1});
-         y = str2num(values{2});
-    % phi = str2num (values {3});
-    % Phid = str2num (values {4});
-    % error = str2num (values {5});
-    % Rdistance = str2num (values {6});
-    % Ldistance = str2num (values {7});
+         x = str2double(values{1});
+         y = str2double(values{2});
+         if isnan(x) || isnan(y)
+             continue;
+         end
          counter = counter + 1;
          plot(x, y, '*')
          pause(0.01);

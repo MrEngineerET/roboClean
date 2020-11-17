@@ -65,31 +65,31 @@ float phiErrSum = 0;
 float Kp = 2;
 float Ki = 0.01;
 float Kd = 0.01;
-const int PWMmax = 150;
-const int PWMmin = 80;
-const int robotMaxSpeed = 80;  // [cm/s]
+const int PWMmax = 100;
+const int PWMmin = 40;
+const int robotMaxSpeed = 150;  // [cm/s]
 const int robotMinSpeed = 35; // [cm/s]
 
 void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
+   delay(3000);
    moveMotor(LEFT_WHEEL,FORWARD,0);
    moveMotor(RIGHT_WHEEL,FORWARD,0);
    pinMode(switchPin,INPUT_PULLUP);
   initialize();
-  delay(10000);
+  delay(3000);
 }
 
 void initialize(){
    Xg = 100; 
    Yg = 100;
-   V = 50;
+   V = 60;
    phid = 0; 
    phiErr = 0;
    phiErrOld = 0;
-   phiErrSum = 0;
-   V = 0;  
+   phiErrSum = 0; 
    Vr = 0; 
    Vl = 0;
    W = 0; 
@@ -98,8 +98,10 @@ void initialize(){
 }
 void loop () {
   if(digitalRead(switchPin) == 1){
+      moveMotor(LEFT_WHEEL,FORWARD,0);
+      moveMotor(RIGHT_WHEEL,FORWARD,0);
       initialize();
-      delay(10000);
+      delay(3000);
    }else{
      currentTimeSample = millis();
      if(currentTimeSample - previousTimeSample > delta){
@@ -108,8 +110,6 @@ void loop () {
        odometry();
        goToGoal();
    }
-  
-  
     // calculating the velocity of both the left and the right wheel
 //        Vr = (float)(1000*meanDr)/delta;
 //        Vl = (float)(1000*meanDl)/delta;
@@ -120,13 +120,13 @@ void loop () {
 //        Serial.print(" ");
 //        Serial.println(Vr);
 
-//        Serial.print(x); 
-//        Serial.print(",");
-//        Serial.print(y);
-//        Serial.print(","); 
-//        Serial.print((float)millis()/1000);
-//        Serial.print(",");
-//        Serial.println(phi); 
+        Serial.print(x); 
+        Serial.print(",");
+        Serial.print(y);
+        Serial.print(","); 
+        Serial.print((float)millis()/1000);
+        Serial.print(",");
+        Serial.println(phi); 
 
 //        Serial.print(", ");
 //        Serial.print(phid); 
@@ -221,8 +221,11 @@ void goToGoal(){
    }
   phid = atan2(Yg-y,Xg-x);
   phiErr = phid - phi;
+  phiErr = atan2(sin(phiErr),cos(phiErr));
   phiErrSum += phiErr;
+  phiErrSum = atan2(sin(phiErrSum),cos(phiErrSum));
   W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/delta);
+//  W = Kp * phiErr; 
   phiErrOld = phiErr;
   Vl = (2*V - W*L)/2;
   Vr = (2*V + W*L)/2;
