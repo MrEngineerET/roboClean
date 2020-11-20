@@ -1,20 +1,34 @@
+import processing.serial.*;
+Serial roboCleanSerial;
 
 Robot myRobot;
 Tracing traceRobot;
 int backgroundColor = 200;
-
+String serialMessage = "";
+float messageArray[];
 void setup(){
-  size(1020,700);
+  size(200,200);
+  roboCleanSerial = new Serial(this,"COM9",9600);
+  roboCleanSerial.clear();
   myRobot = new Robot(0,0,50);
   traceRobot = new Tracing(myRobot.getX(),myRobot.getY());
   background(backgroundColor);
 }
 
 void draw(){
-  //fill(0);
-  //circle(mouseX,mouseY,50);
-  myRobot.move(mouseX,mouseY);
-  traceRobot.drawTrace(myRobot.getX(),myRobot.getY());
+  // parse for x value and y value from the serial input 
+  if (roboCleanSerial.available()>0){
+    serialMessage = roboCleanSerial.readStringUntil('\n');
+    if(serialMessage != null) {
+      messageArray = splitMessage(serialMessage,',');
+    }
+    if(!(messageArray.length == 1 && messageArray[0] == -1)){
+      float x = messageArray[0];
+      float y = messageArray[1];
+      myRobot.move(x,y);
+      traceRobot.drawTrace(myRobot.getX(),myRobot.getY());  
+    }
+  }
   
   image(myRobot.graphics(),0,0);
   image(traceRobot.graphics(),0,0);
@@ -80,5 +94,22 @@ class Tracing{
   
     PGraphics graphics(){
     return tracingPG;
+  }
+}
+
+float[] splitMessage(String message,char c){
+  float x,y,theta,t;
+  try{
+    int ind1 = message.indexOf(',');
+    x = parseInt(message.substring(0,ind1));
+    int ind2 = message.indexOf(',',ind1+1);
+    y = parseInt(message.substring(ind1+1,ind2));
+    int ind3 = message.indexOf(',',ind2+1);
+    t = parseInt(message.substring(ind2+1,ind3));
+    float result[] = {x,y,t};
+    return result;
+  }catch(Exception e){
+    float result[] = {-1};
+    return result;
   }
 }

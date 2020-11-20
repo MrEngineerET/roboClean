@@ -1,6 +1,5 @@
-close all;
+clear;
 clc;
-y = zeros(1,1000);
 
 delete(instrfind({'Port'},{'COM9'}));
 serial_port = serial('COM9', 'Terminator', 'CR/LF');
@@ -9,30 +8,35 @@ warning('off','MATLAB:serial:fscanf:unsuccessfulread');
 
 fopen(serial_port);
 
-sample_counter = 1;
-
-plot(100,100,'or')
-hold on
-
-while sample_counter <= 800
-   potentiometer_value = fscanf(serial_port);
-    C = strsplit(potentiometer_value, ',');
-    len = size(C);
+figure
+title('Position of the Robot');
+xlabel('X axis(cm)');
+ylabel('Y axis(cm)');
+plot(0,0,'or');
+hold on;
+plot(100,100,'or');
+hold on;
+plot(110,110);
+hold on;
+counter = 1;
+while counter <= 100
+   str = fscanf(serial_port);
+    values = strsplit(str, ',');
+    len = size(values);
     len = len(2);
-    if len == 2
-         X = str2num(C{1});
-         Y = str2num(C{2});
-    % phi = str2num (C {3});
-    % Phid = str2num (C {4});
-    % error = str2num (C {5});
-    % Rdistance = str2num (C {6});
-    % Ldistance = str2num (C {7});
-         sample_counter = sample_counter + 1;
-         plot(X, Y, '*')
+    if len == 4
+         x = str2double(values{1});
+         y = str2double(values{2});
+         if isnan(x) || isnan(y)
+             continue;
+         end
+         counter = counter + 1;
+         plot(x, y, '*')
          pause(0.01);
          hold on
         % [phi, Phid, error]
      end
 end
-
+hold off;
 fclose(serial_port);
+clear;

@@ -7,6 +7,7 @@
 // MOTOR VARIABLES
 #define LEFT_WHEEL 1
 #define RIGHT_WHEEL 2
+#define switchPin 22
 
 //LEFT WHEEL VARIABLES
 int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
@@ -47,15 +48,15 @@ float V;
 float Vr;
 float Vl;
 float w;
-
+int mspeed = 0;
 
 void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
-   Serial.begin(9600); // start of serial communication
+   Serial2.begin(9600); // start of serial communication
+   delay(3000);
    pinMode(switchPin,INPUT_PULLUP);
-   delay(000);
-   moveMotor(LEFT_WHEEL,FORWARD,50);
+   moveMotor(LEFT_WHEEL,FORWARD,0);
    moveMotor(RIGHT_WHEEL,FORWARD,0);
    // intializing the position and orientation of the robot
    x = 0;
@@ -69,19 +70,20 @@ void setup () {
 }
 
 void loop () {
-  if(Serial.available() > 0){
+  if(Serial2.available() > 0){
       mspeed = Serial2.readStringUntil('\n').toInt();
     }
-  if(digitalRead(switchPin) == 1){
-    moveMotor(LEFT_WHEEL,FORWARD,0);
-    moveMotor(RIGHT_WHEEL,FORWARD,0);
-    delay(1000);
- }else{
-    moveMotor(LEFT_WHEEL,FORWARD,mspeed);
-    moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
-    delay(1000);
- }
-  currentTimeSample = millis();
+   if(digitalRead(switchPin) == 1){
+      moveMotor(LEFT_WHEEL,FORWARD,mspeed);
+      moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
+      delay(1000);
+    }else{
+      moveMotor(LEFT_WHEEL,FORWARD,mspeed);
+      moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
+      delay(1000);
+    }
+  
+ currentTimeSample = millis();
   if(currentTimeSample - previousTimeSample > delta){
      previousTimeSample = currentTimeSample;
     // calculate the distance traveled by both left and right wheel
@@ -92,12 +94,16 @@ void loop () {
     V = (Vr + Vl)/2;
     w = (Vr - Vl)/L;
       // for observing right wheel velocity and left wheel velocity
-//      Serial.print(Vr); 
-//      Serial.print(" ");
-//      Serial.println(Vl);
-      // for observing the angular velocity of the robot
-      // Serial.println(w);
-      Serial.println(Vl);
+      Serial2.print(Vr); 
+      Serial2.print(",");
+      Serial2.print(Vl);
+      Serial2.print(",");
+      Serial2.print(V);
+      Serial2.print(",");
+      Serial2.print(w);
+      Serial2.print(",");
+      Serial2.println((float)millis()/1000);
+      
     }
 }
 

@@ -67,7 +67,7 @@ float Ki = 0.05;
 float Kd = 0;
 // VALUES FOUND BY EMPIRICAL EXPERMENT
 const int PWMmax = 100;
-const int PWMmin = 35;
+const int PWMmin = 40;
 const int Vmax = 150;  // [cm/s]
 
 const int Wmax_V0 = 60;  // [cm/s]

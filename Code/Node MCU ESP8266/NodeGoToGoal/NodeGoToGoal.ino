@@ -27,7 +27,7 @@ void setup() {
   delay(100);
 
   server.on("/",handleHomePage);
-  server.on("/matlab", handleMatlabJSON);
+  server.on("/pose", handleMatlabJSON);
   server.begin();
   Serial.println("HTTP Server Started");
   x = y = t = theta = "0.0";
@@ -46,7 +46,7 @@ void loop() {
       int ind3 = message.indexOf(',',ind2+1);
       t = message.substring(ind2+1,ind3);
       int ind4 = message.indexOf(',',ind3+1);
-      theta = message.substring(ind4+1);
+      theta = message.substring(ind3+1,ind4);
   }
 }
 
