@@ -253,6 +253,8 @@ float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
   rightMotorSpeed = map(Vr,robotMinSpeed,robotMaxSpeed,PWMmin,PWMmax);
   moveMotor(LEFT_WHEEL,FORWARD,leftMotorSpeed);
   moveMotor(RIGHT_WHEEL,FORWARD,rightMotorSpeed);
+
+  // V = 60;
 }
 
 float largePhiErrorController(){ // for phiError > pi/8 or phiError < -phi/8

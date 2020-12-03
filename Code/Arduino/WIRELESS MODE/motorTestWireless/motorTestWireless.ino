@@ -12,21 +12,22 @@ AF_DCMotor rightWheel(4);
 void setup() {
  pinMode(switchPin,INPUT_PULLUP);
  Serial2.begin(9600);
-      
+ Serial.begin(9600); 
 }
 
 void loop() {
   if(Serial2.available() > 0){
       mspeed = Serial2.readStringUntil('\n').toInt();
+      Serial.println(mspeed);
     }
   if(digitalRead(switchPin) == 1){
     moveMotor(LEFT_WHEEL,FORWARD,0);
     moveMotor(RIGHT_WHEEL,FORWARD,0);
-    delay(3000);
+    delay(1000);
  }else{
     moveMotor(LEFT_WHEEL,FORWARD,mspeed);
     moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
-    delay(3000);
+    delay(1000);
  }
 }
 
