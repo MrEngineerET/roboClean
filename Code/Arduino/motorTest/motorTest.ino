@@ -19,16 +19,16 @@ void setup() {
 void loop() {
   if(Serial.available() > 0){
       mspeed = Serial.readString().toInt();
-      delay(3000);
+      delay(1000);
     }
   if(digitalRead(switchPin) == 1){
     moveMotor(LEFT_WHEEL,FORWARD,0);
     moveMotor(RIGHT_WHEEL,FORWARD,0);
-    delay(3000);
+    delay(1000);
  }else{
     moveMotor(LEFT_WHEEL,FORWARD,mspeed);
     moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
-    delay(3000);
+    delay(1000);
  }
 }
 

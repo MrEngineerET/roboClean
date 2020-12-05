@@ -28,7 +28,7 @@ volatile unsigned long debounceL = 0;   // time stamp of the last bounce of the 
 volatile unsigned long debounceR = 0;   // time stamp of the last bounce of the incoming signal from the right encoder
 
 // DESIGN VARIABLE
-const int delta = 100;    // sampling time of the system
+const int delta = 500;    // sampling time of the system
 unsigned long currentTimeSample = 0;
 unsigned long previousTimeSample = 0; 
 
@@ -41,7 +41,7 @@ float Dc = 0;
 float x;  // the x position of the robot
 float y;  // the y postition of the robot
 float phi; // the orientation of the robot
-const float L = 13.4; // length of the robot between tires[cm]
+const float L = 30; // length of the robot between tires[cm]
 
 // ROBOT INPUT VARIABLE
 float V;
@@ -54,6 +54,7 @@ void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial2.begin(9600); // start of serial communication
+   Serial.begin(9600);
    delay(3000);
    pinMode(switchPin,INPUT_PULLUP);
    moveMotor(LEFT_WHEEL,FORWARD,0);
@@ -103,7 +104,8 @@ void loop () {
       Serial2.print(w);
       Serial2.print(",");
       Serial2.println((float)millis()/1000);
-      
+
+  
     }
 }
 

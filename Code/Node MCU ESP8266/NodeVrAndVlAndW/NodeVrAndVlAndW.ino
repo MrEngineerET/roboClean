@@ -52,6 +52,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   server.handleClient();
   if(arduinoSerial.available()>0){
+     Serial.println("message recieved");
      message  = arduinoSerial.readStringUntil('\n');
       int ind1 = message.indexOf(',');
       Vr = message.substring(0,ind1);
@@ -87,7 +88,6 @@ void handleMotorTestGetValue(){
         arduinoSerial.println(server.arg(i));
       }
     }
-    Serial.println(message);
-    server.send(200, "text/plain", message);  
+   server.send(200,"text/html",motor_speed_form);
   }
 }

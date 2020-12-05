@@ -8,6 +8,8 @@
 #define LEFT_WHEEL 1
 #define RIGHT_WHEEL 2
 
+int switchPin = 22;
+
 //LEFT WHEEL VARIABLES
 int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
 volatile unsigned long currentLeftEncoderPulses = 0;   // Number of left Encoder pulses
@@ -22,12 +24,14 @@ volatile unsigned long previousRightEncoderPulses = 0;  // Number of right Encod
 int rightMotorSpeed = 0;    // speed value for rightMotor which is between 0 and 255
 AF_DCMotor rightWheel(4); // Motor 4 section of the motor shield will be used for right Motor of the robot
 
+int mspeed = 0;
+
 // variable used for reading a clean and good signal from the encoder
 volatile unsigned long debounceL = 0;   // time stamp of the last bounce of the incoming signal from the left encoder
 volatile unsigned long debounceR = 0;   // time stamp of the last bounce of the incoming signal from the right encoder
 
 // DESIGN VARIABLE
-const int delta = 100;    // sampling time of the system
+const int delta = 1000;    // sampling time of the system
 unsigned long currentTimeSample = 0;
 unsigned long previousTimeSample = 0; 
 
@@ -40,7 +44,7 @@ float Dc = 0;
 float x;  // the x position of the robot
 float y;  // the y postition of the robot
 float phi; // the orientation of the robot
-const float L = 13.4; // length of the robot between tires[cm]
+const float L = 30; // length of the robot between tires[cm]
 
 // ROBOT INPUT VARIABLE
 float V;
@@ -70,7 +74,7 @@ void setup () {
 
 void loop () {
   if(Serial.available() > 0){
-      mspeed = Serial2.readStringUntil('\n').toInt();
+      mspeed = Serial.readStringUntil('\n').toInt();
     }
   if(digitalRead(switchPin) == 1){
     moveMotor(LEFT_WHEEL,FORWARD,0);
@@ -92,12 +96,14 @@ void loop () {
     V = (Vr + Vl)/2;
     w = (Vr - Vl)/L;
       // for observing right wheel velocity and left wheel velocity
-//      Serial.print(Vr); 
+      Serial.print(Vr); 
+      Serial.print(" ");
+      Serial.print(Vl);
+      Serial.print(" ");
+      Serial.println(V);
 //      Serial.print(" ");
-//      Serial.println(Vl);
       // for observing the angular velocity of the robot
-      // Serial.println(w);
-      Serial.println(Vl);
+//      Serial.println(w);
     }
 }
 
@@ -139,10 +145,9 @@ void odometry(){
   // median filter
   Dl = ((float)(currentLeftEncoderPulses-previousLeftEncoderPulses)/numberOfHole) * PI * diameter;
   Dr = ((float)(currentRightEncoderPulses-previousRightEncoderPulses)/numberOfHole) * PI * diameter;
-  
-  Dc = ((float)Dl+Dr)/2;
   previousLeftEncoderPulses = currentLeftEncoderPulses;
   previousRightEncoderPulses = currentRightEncoderPulses;
+  Dc = ((float)Dl+Dr)/2;
   x = x + Dc*cos(phi);
   y = y + Dc*sin(phi);
   phi = phi + (Dr - Dl)/L;
