@@ -6,7 +6,7 @@
 #define switchPin 22
 int mspeed=0;
 
-AF_DCMotor leftWheel(3);
+AF_DCMotor leftWheel(1);
 AF_DCMotor rightWheel(4);
 
 void setup() {
@@ -43,10 +43,18 @@ void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
   }else if(WHEEL == RIGHT_WHEEL){
       if(DIRECTION == FORWARD){
         rightWheel.run(FORWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);
+        }else {
+          rightWheel.setSpeed(mSpeed+10);
+        }
       }else{
         rightWheel.run(BACKWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);  
+        }else{
+          rightWheel.setSpeed(mSpeed+10);        
+        }
       }
   }
 }

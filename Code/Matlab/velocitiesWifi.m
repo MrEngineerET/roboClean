@@ -3,7 +3,7 @@ clc;
 
 %figure
 counter = 1;
-while counter <= 10
+while counter <= 20
     str = webread('http://192.168.1.1/velocities')
     %Vr = str.Vr;
     %Vl = str.Vl;
@@ -12,7 +12,7 @@ while counter <= 10
     %w = str.w;
     %t = str.t;
     %plot(Vr, t, '*')
-    pause(0.2);
+    pause(0.5);
     %hold on
     counter = counter + 1;
 

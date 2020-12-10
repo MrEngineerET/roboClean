@@ -6,7 +6,7 @@
 #define switchPin 22
 int mspeed=0;
 
-AF_DCMotor leftWheel(3);
+AF_DCMotor leftWheel(1);
 AF_DCMotor rightWheel(4);
 
 void setup() {

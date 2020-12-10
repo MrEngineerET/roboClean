@@ -15,7 +15,7 @@ int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
 volatile unsigned long currentLeftEncoderPulses = 0;   // Number of left Encoder pulses
 volatile unsigned long previousLeftEncoderPulses = 0;   // Number of left Encoder pulses
 int leftMotorSpeed = 0;   // speed value for leftMotor which is between 0 and 255
-AF_DCMotor leftWheel(3); // Motor 3 section of the motor shield will be used for left Motor of the robot
+AF_DCMotor leftWheel(1); // Motor 3 section of the motor shield will be used for left Motor of the robot
 
 //RIGHT WHEEL VARIABLES
 int rightEncoderPin = 19; // Pin 19, where the right ecoder pin DO is connected
@@ -79,11 +79,9 @@ void loop () {
   if(digitalRead(switchPin) == 1){
     moveMotor(LEFT_WHEEL,FORWARD,0);
     moveMotor(RIGHT_WHEEL,FORWARD,0);
-    delay(1000);
  }else{
     moveMotor(LEFT_WHEEL,FORWARD,mspeed);
     moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
-    delay(1000);
  }
   currentTimeSample = millis();
   if(currentTimeSample - previousTimeSample > delta){
@@ -121,6 +119,19 @@ void REncoder () {// interrupt function of the right wheel encoder
 }
 
 
+void odometry(){
+  // median filter
+  Dl = ((float)(currentLeftEncoderPulses-previousLeftEncoderPulses)/numberOfHole) * PI * diameter;
+  Dr = ((float)(currentRightEncoderPulses-previousRightEncoderPulses)/numberOfHole) * PI * diameter;
+  previousLeftEncoderPulses = currentLeftEncoderPulses;
+  previousRightEncoderPulses = currentRightEncoderPulses;
+  Dc = ((float)Dl+Dr)/2;
+  x = x + Dc*cos(phi);
+  y = y + Dc*sin(phi);
+  phi = phi + (Dr - Dl)/L;
+  phi = atan2(sin(phi),cos(phi));
+}
+
 void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
   if(WHEEL == LEFT_WHEEL){
       if(DIRECTION == FORWARD){
@@ -133,23 +144,18 @@ void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
   }else if(WHEEL == RIGHT_WHEEL){
       if(DIRECTION == FORWARD){
         rightWheel.run(FORWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);
+        }else {
+          rightWheel.setSpeed(mSpeed+30);
+        }
       }else{
         rightWheel.run(BACKWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);  
+        }else{
+          rightWheel.setSpeed(mSpeed+30);        
+        }
       }
   }
-}
-
-void odometry(){
-  // median filter
-  Dl = ((float)(currentLeftEncoderPulses-previousLeftEncoderPulses)/numberOfHole) * PI * diameter;
-  Dr = ((float)(currentRightEncoderPulses-previousRightEncoderPulses)/numberOfHole) * PI * diameter;
-  previousLeftEncoderPulses = currentLeftEncoderPulses;
-  previousRightEncoderPulses = currentRightEncoderPulses;
-  Dc = ((float)Dl+Dr)/2;
-  x = x + Dc*cos(phi);
-  y = y + Dc*sin(phi);
-  phi = phi + (Dr - Dl)/L;
-  phi = atan2(sin(phi),cos(phi));
 }

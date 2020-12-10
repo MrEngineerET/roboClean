@@ -15,7 +15,7 @@ int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
 volatile unsigned long currentLeftEncoderPulses = 0;   // Number of left Encoder pulses
 volatile unsigned long previousLeftEncoderPulses = 0;   // Number of left Encoder pulses
 int leftMotorSpeed = 0;   // speed value for leftMotor which is between 0 and 255
-AF_DCMotor leftWheel(3); // Motor 3 section of the motor shield will be used for left Motor of the robot
+AF_DCMotor leftWheel(1); // Motor 3 section of the motor shield will be used for left Motor of the robot
 
 //RIGHT WHEEL VARIABLES
 int rightEncoderPin = 19; // Pin 19, where the right ecoder pin DO is connected

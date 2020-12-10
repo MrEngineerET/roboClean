@@ -33,8 +33,15 @@ const int delta = 100;    // sampling time of the system
 unsigned long currentTimeSample = 0;
 unsigned long previousTimeSample = 0; 
 
+// variables used for finding time difference between two instant time
+unsigned long currentErrorPIDTimeSample = 0;
+unsigned long previousErrorPIDTimeSample = 0;
+
+unsigned long currentErrorSumTimeSample = 0;
+unsigned long previousErrorSumTimeSample = 0;
+
 // ODOMETRY VARIABLES
-#define ARRAYSIZE 10
+#define ARRAYSIZE 4
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
 const float diameter = 6.8; // the radius of left and right wheels[cm]
 float Dl = 0; // the latest value of distance moved by the left wheel
@@ -47,7 +54,7 @@ float Dc = 0;
 float x = 0;  // the x position of the robot
 float y = 0;  // the y postition of the robot
 float phi = 0; // the orientation of the robot
-const float L = 13.4; // length of the robot between tires[cm]
+const float L = 30; // length of the robot between tires[cm]
 
 // ROBOT INPUT VARIABLE
 float V = 0;  // the overall velocity of the robot [cm/sec]
@@ -175,10 +182,18 @@ void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
   }else if(WHEEL == RIGHT_WHEEL){
       if(DIRECTION == FORWARD){
         rightWheel.run(FORWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);
+        }else {
+          rightWheel.setSpeed(mSpeed+30);
+        }
       }else{
         rightWheel.run(BACKWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);  
+        }else{
+          rightWheel.setSpeed(mSpeed+30);        
+        }
       }
   }
 }
@@ -223,7 +238,9 @@ void goToGoal(){
    }
   phid = atan2(Yg-y,Xg-x);
   phiErr = phid - phi;
-  phiErrSum += phiErr * delta/1000;
+  currentErrorSumTimeSample = millis();
+  phiErrSum += phiErr * (currentErrorSumTimeSample-previousErrorSumTimeSample)/1000;
+  previousErrorSumTimeSample = currentErrorSumTimeSample;
   if(phiErr < PI/8 && phiErr > -PI/8){
     smallPhiErrorController();
   }else{
@@ -232,9 +249,10 @@ void goToGoal(){
 }
 float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
   // PID controller for angular velocity of the robot
-  W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/delta);
+  currentErrorPIDTimeSample = millis();
+  W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/(currentErrorPIDTimeSample-previousErrorPIDTimeSample));
+  previousErrorPIDTimeSample = currentErrorPIDTimeSample;
   phiErrOld = phiErr;
-  
   // validate if the angular velocity is ensured
   ensure_W();
 

@@ -15,7 +15,7 @@ int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
 volatile unsigned long currentLeftEncoderPulses = 0;   // Number of left Encoder pulses
 volatile unsigned long previousLeftEncoderPulses = 0;   // Number of left Encoder pulses
 int leftMotorSpeed = 0;   // speed value for leftMotor which is between 0 and 255
-AF_DCMotor leftWheel(3); // Motor 3 section of the motor shield will be used for left Motor of the robot
+AF_DCMotor leftWheel(1); // Motor 3 section of the motor shield will be used for left Motor of the robot
 
 //RIGHT WHEEL VARIABLES
 int rightEncoderPin = 19; // Pin 19, where the right ecoder pin DO is connected
@@ -66,9 +66,9 @@ float Kp = 2;
 float Ki = 0.05;
 float Kd = 0;
 const int PWMmax = 100;
-const int PWMmin = 40;
+const int PWMmin = 55;
 const int robotMaxSpeed = 150;  // [cm/s]
-const int robotMinSpeed = 30; // [cm/s]
+const int robotMinSpeed = 40; // [cm/s]
 
 void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
@@ -131,7 +131,10 @@ void loop () {
 void initialize(){
    Xg = 100; 
    Yg = 100;
-   V = 60;
+   V = 55;
+   x = 0;
+   y = 0;
+   phi = 0;
    phid = 0; 
    phiErr = 0;
    phiErrOld = 0;

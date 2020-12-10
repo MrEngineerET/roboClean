@@ -15,7 +15,7 @@ int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
 volatile unsigned long currentLeftEncoderPulses = 0;   // Number of left Encoder pulses
 volatile unsigned long previousLeftEncoderPulses = 0;   // Number of left Encoder pulses
 int leftMotorSpeed = 0;   // speed value for leftMotor which is between 0 and 255
-AF_DCMotor leftWheel(3); // Motor 3 section of the motor shield will be used for left Motor of the robot
+AF_DCMotor leftWheel(1); // Motor 3 section of the motor shield will be used for left Motor of the robot
 
 //RIGHT WHEEL VARIABLES
 int rightEncoderPin = 19; // Pin 19, where the right ecoder pin DO is connected
@@ -33,8 +33,15 @@ const int delta = 100;    // sampling time of the system
 unsigned long currentTimeSample = 0;
 unsigned long previousTimeSample = 0; 
 
+// variables used for finding time difference between two instant time
+unsigned long currentErrorPIDTimeSample = 0;
+unsigned long previousErrorPIDTimeSample = 0;
+
+unsigned long currentErrorSumTimeSample = 0;
+unsigned long previousErrorSumTimeSample = 0;
+
 // ODOMETRY VARIABLES
-#define ARRAYSIZE 10
+#define ARRAYSIZE 4
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
 const float diameter = 6.8; // the radius of left and right wheels[cm]
 float Dl = 0; // the latest value of distance moved by the left wheel
@@ -47,7 +54,7 @@ float Dc = 0;
 float x = 0;  // the x position of the robot
 float y = 0;  // the y postition of the robot
 float phi = 0; // the orientation of the robot
-const float L = 13.4; // length of the robot between tires[cm]
+const float L = 30; // length of the robot between tires[cm]
 
 // ROBOT INPUT VARIABLE
 float V = 0;  // the overall velocity of the robot [cm/sec]
@@ -66,13 +73,13 @@ float Kp = 2;
 float Ki = 0.05;
 float Kd = 0;
 // VALUES FOUND BY EMPIRICAL EXPERMENT
-const int PWMmax = 100;
-const int PWMmin = 35;
-const int Vmax = 150;  // [cm/s]
+const int PWMmax = 140;
+const int PWMmin = 100;
+const int Vmax = 90;  // [cm/s]
 
-const int Wmax_V0 = 60;  // [cm/s]
-const int Vmax_W0 = 150;  // [cm/s]
-const int robotMaxSpeed = 150;  // [cm/s]
+const int Wmax_V0 = 50;  // [cm/s]
+const int Vmax_W0 = 90;  // [cm/s]
+const int robotMaxSpeed = 90;  // [cm/s]
 const int robotMinSpeed = 30; // [cm/s]
 
 void setup () {
@@ -146,9 +153,12 @@ void loop () {
 }
 
 void initialize(){
-   Xg = 100; 
-   Yg = 100;
-   V = 60;
+   Xg = 130; 
+   Yg = 0;
+   V = 50;
+   x = 0; 
+   y = 0;
+   phi = 0;
    phid = 0; 
    phiErr = 0;
    phiErrOld = 0;
@@ -173,7 +183,6 @@ void REncoder () {// interrupt function of the right wheel encoder
     }
 }
 
-
 void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
   if(WHEEL == LEFT_WHEEL){
       if(DIRECTION == FORWARD){
@@ -186,10 +195,18 @@ void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
   }else if(WHEEL == RIGHT_WHEEL){
       if(DIRECTION == FORWARD){
         rightWheel.run(FORWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);
+        }else {
+          rightWheel.setSpeed(mSpeed+30);
+        }
       }else{
         rightWheel.run(BACKWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);  
+        }else{
+          rightWheel.setSpeed(mSpeed+30);        
+        }
       }
   }
 }
@@ -227,14 +244,16 @@ void avoidObstacle(){
 }
 
 void goToGoal(){
-   if(abs(Xg - x) < 5 && abs(Yg - y) < 5){
+   if(abs(Xg - x) < 20 && abs(Yg - y) < 20){
       moveMotor(LEFT_WHEEL,FORWARD,0);
       moveMotor(RIGHT_WHEEL,FORWARD,0);
       return;
    }
   phid = atan2(Yg-y,Xg-x);
   phiErr = phid - phi;
-  phiErrSum += phiErr * delta/1000;
+  currentErrorSumTimeSample = millis();
+  phiErrSum += phiErr * (currentErrorSumTimeSample-previousErrorSumTimeSample)/1000;
+  previousErrorSumTimeSample = currentErrorSumTimeSample;
   if(phiErr < PI/8 && phiErr > -PI/8){
     smallPhiErrorController();
   }else{
@@ -242,10 +261,12 @@ void goToGoal(){
   }
 }
 float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
-  // PID controller for angular velocity of the robot
-  W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/delta);
+// PID controller for angular velocity of the robot
+  currentErrorPIDTimeSample = millis();
+  W = Kp * phiErr;
+//  W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/(currentErrorPIDTimeSample-previousErrorPIDTimeSample));
+  previousErrorPIDTimeSample = currentErrorPIDTimeSample;
   phiErrOld = phiErr;
-  
   // validate if the angular velocity is ensured
   ensure_W();
 
@@ -253,8 +274,8 @@ float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
   rightMotorSpeed = map(Vr,robotMinSpeed,robotMaxSpeed,PWMmin,PWMmax);
   moveMotor(LEFT_WHEEL,FORWARD,leftMotorSpeed);
   moveMotor(RIGHT_WHEEL,FORWARD,rightMotorSpeed);
-
-  // V = 60;
+   V = 60;
+   
 }
 
 float largePhiErrorController(){ // for phiError > pi/8 or phiError < -phi/8

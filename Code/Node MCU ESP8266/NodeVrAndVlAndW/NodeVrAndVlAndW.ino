@@ -20,17 +20,23 @@ ESP8266WebServer server(80);
 String Vr,Vl,V,w,t,message;
 
 const char motor_speed_form[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html><head>
-  <title>Testing the motor of speeds</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  </head><body>
-  <h2>Robo Clean Speed Test</h2> 
-  <form action="/getSpeedValue", method = "post">
-    Speed in cm/s <input type="number" step="1" name="motorSpeed">
-    <input type="submit" value="RUN">
-  </form>
-</body></html>)rawliteral";
-
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Testing the motor of speeds</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <h2>Robo Clean Speed Test</h2>
+    <form action="/motorSpeedgetSpeedValue" , method="post">
+            <label>Speed in cm/s</label> 
+            <input type="number" step="1" name="motorSpeed" />
+            <input type="submit" value="RUN" name= "run" />
+            <input type="submit" value="STOP" name= "stop" />
+    </form>
+  </body>
+</html>
+)rawliteral";
 
 void setup() {
   // put your setup code here, to run once:
@@ -42,7 +48,7 @@ void setup() {
   delay(100);
 
   server.on("/motorSpeed",handleMotorTest);
-  server.on("/getSpeedValue",handleMotorTestGetValue);
+  server.on("/motorSpeedgetSpeedValue",handleMotorSpeedGetValue);
   // endpoint for matlab and processing to get all the speed value and angular velocity
   server.on("/velocities",handleGetVelocity);
   server.begin();
@@ -79,15 +85,19 @@ void handleMotorTest(){
   server.send(200,"text/html",motor_speed_form);
 }
 
-void handleMotorTestGetValue(){
+
+void handleMotorSpeedGetValue(){
   if(server.method() == HTTP_POST){
-    
     for (uint8_t i = 0; i < server.args(); i++) {
-      message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+//      message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
       if(server.argName(i) == "motorSpeed"){
         arduinoSerial.println(server.arg(i));
+      }else if(server.argName(i) == "stop"){
+        arduinoSerial.println("0");  
+        Serial.println("stop is pressed");
       }
     }
+//   Serial.println(message);
    server.send(200,"text/html",motor_speed_form);
   }
 }

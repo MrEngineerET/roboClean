@@ -9,12 +9,14 @@
 #define LEFT_WHEEL 1
 #define RIGHT_WHEEL 2
 
+int switchPin = 22;
+
 //LEFT WHEEL VARIABLES
 int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
 volatile unsigned long currentLeftEncoderPulses = 0;   // Number of left Encoder pulses
 volatile unsigned long previousLeftEncoderPulses = 0;   // Number of left Encoder pulses
 int leftMotorSpeed = 0;   // speed value for leftMotor which is between 0 and 255
-AF_DCMotor leftWheel(3); // Motor 3 section of the motor shield will be used for left Motor of the robot
+AF_DCMotor leftWheel(1); // Motor 3 section of the motor shield will be used for left Motor of the robot
 
 //RIGHT WHEEL VARIABLES
 int rightEncoderPin = 19; // Pin 19, where the right ecoder pin DO is connected
@@ -23,17 +25,20 @@ volatile unsigned long previousRightEncoderPulses = 0;  // Number of right Encod
 int rightMotorSpeed = 0;    // speed value for rightMotor which is between 0 and 255
 AF_DCMotor rightWheel(4); // Motor 4 section of the motor shield will be used for right Motor of the robot
 
+int mspeed = 0;
+
 // variable used for reading a clean and good signal from the encoder
 volatile unsigned long debounceL = 0;   // time stamp of the last bounce of the incoming signal from the left encoder
 volatile unsigned long debounceR = 0;   // time stamp of the last bounce of the incoming signal from the right encoder
 
 // DESIGN VARIABLE
 const int delta = 100;    // sampling time of the system
+int actualDelta = 0;
 unsigned long currentTimeSample = 0;
 unsigned long previousTimeSample = 0; 
 
 // ODOMETRY VARIABLES
-#define ARRAYSIZE 10
+#define ARRAYSIZE 4
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
 const float diameter = 6.8; // the radius of left and right wheels[cm]
 float Dl = 0; // the latest value of distance moved by the left wheel
@@ -46,7 +51,7 @@ float Dc = 0;
 float x;  // the x position of the robot
 float y;  // the y postition of the robot
 float phi; // the orientation of the robot
-const float L = 13.4; // length of the robot between tires[cm]
+const float L = 30; // length of the robot between tires[cm]
 
 // ROBOT INPUT VARIABLE
 float V;
@@ -59,7 +64,7 @@ void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
-   delay(5000);
+   delay(1000);
    moveMotor(LEFT_WHEEL,FORWARD,50);
    moveMotor(RIGHT_WHEEL,FORWARD,50);
    // intializing the position and orientation of the robot
@@ -74,14 +79,26 @@ void setup () {
 }
 
 void loop () {
+  if(Serial.available() > 0){
+      mspeed = Serial.readStringUntil('\n').toInt();
+  }
+  if(digitalRead(switchPin) == 1){
+    moveMotor(LEFT_WHEEL,FORWARD,0);
+    moveMotor(RIGHT_WHEEL,FORWARD,0);
+  }else{
+    moveMotor(LEFT_WHEEL,FORWARD,mspeed);
+    moveMotor(RIGHT_WHEEL,FORWARD,mspeed);
+  }
+  
   currentTimeSample = millis();
   if(currentTimeSample - previousTimeSample > delta){
      previousTimeSample = currentTimeSample;
+     actualDelta = currentTimeSample - previousTimeSample;
     // calculate the distance traveled by both left and right wheel
       odometry();
     // calculating the velocity of both the left and the right wheel
-        Vr = (float)(1000*meanDr)/delta;
-        Vl = (float)(1000*meanDl)/delta;
+        Vr = (float)(1000*meanDr)/actualDelta;
+        Vl = (float)(1000*meanDl)/actualDelta;
         V = (Vr + Vl)/2;
         w = (Vr - Vl)/L;
       // for observing right wheel velocity and left wheel velocity
@@ -109,26 +126,6 @@ void REncoder () {// interrupt function of the right wheel encoder
 }
 
 
-void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
-  if(WHEEL == LEFT_WHEEL){
-      if(DIRECTION == FORWARD){
-        leftWheel.run(FORWARD);
-        leftWheel.setSpeed(mSpeed);
-      }else{
-        leftWheel.run(BACKWARD);
-        leftWheel.setSpeed(mSpeed);
-      }
-  }else if(WHEEL == RIGHT_WHEEL){
-      if(DIRECTION == FORWARD){
-        rightWheel.run(FORWARD);
-        rightWheel.setSpeed(mSpeed);
-      }else{
-        rightWheel.run(BACKWARD);
-        rightWheel.setSpeed(mSpeed);
-      }
-  }
-}
-
 void odometry(){
   // median filter
   Dl = ((float)(currentLeftEncoderPulses-previousLeftEncoderPulses)/numberOfHole) * PI * diameter;
@@ -155,4 +152,32 @@ void odometry(){
   y = y + Dc*sin(phi);
   phi = phi + (Dr - Dl)/L;
   phi = atan2(sin(phi),cos(phi));
+}
+
+void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
+  if(WHEEL == LEFT_WHEEL){
+      if(DIRECTION == FORWARD){
+        leftWheel.run(FORWARD);
+        leftWheel.setSpeed(mSpeed);
+      }else{
+        leftWheel.run(BACKWARD);
+        leftWheel.setSpeed(mSpeed);
+      }
+  }else if(WHEEL == RIGHT_WHEEL){
+      if(DIRECTION == FORWARD){
+        rightWheel.run(FORWARD);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);
+        }else {
+          rightWheel.setSpeed(mSpeed+30);
+        }
+      }else{
+        rightWheel.run(BACKWARD);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);  
+        }else{
+          rightWheel.setSpeed(mSpeed+30);        
+        }
+      }
+  }
 }

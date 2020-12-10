@@ -18,17 +18,25 @@ ESP8266WebServer server(80);
 String x,y,t,theta,message;
 
 const char motor_speed_form[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html><head>
-  <title>Testing the motor of speeds</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  </head><body>
-  <h2>Robo Clean Speed Test</h2> 
-  <form action="/getSpeedValue", method = "post">
-    Speed in cm/s <input type="number" step="1" name="motorSpeed">
-    <input type="submit" value="RUN">
-  </form>
-</body></html>)rawliteral";
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Testing the motor of speeds</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <h2>Robo Clean Speed Test</h2>
+    <form action="/motorSpeedgetSpeedValue" , method="post">
+            <label>Speed in cm/s</label> 
+            <input type="number" step="1" name="motorSpeed" />
+            <input type="submit" value="RUN" name= "run" />
+            <input type="submit" value="STOP" name= "stop" />
+    </form>
+  </body>
+</html>
+)rawliteral";
 
+//prototyping 
 
 void setup() {
   // put your setup code here, to run once:
@@ -41,7 +49,7 @@ void setup() {
   delay(100);
 
   server.on("/motorSpeed",handleMotorSpeed);
-  server.on("/getSpeedValue",handleMotorSpeedGetValue);
+  server.on("/motorSpeedgetSpeedValue",handleMotorSpeedGetValue);
   server.begin();
 }
 
@@ -49,20 +57,23 @@ void loop() {
   // put your main code here, to run repeatedly:
   server.handleClient();
 }
+
 void handleMotorSpeed(){  
   server.send(200,"text/html",motor_speed_form);
 }
 
 void handleMotorSpeedGetValue(){
   if(server.method() == HTTP_POST){
-    
     for (uint8_t i = 0; i < server.args(); i++) {
-      message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+//      message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
       if(server.argName(i) == "motorSpeed"){
         arduinoSerial.println(server.arg(i));
+      }else if(server.argName(i) == "stop"){
+        arduinoSerial.println("0");  
+        Serial.println("stop is pressed");
       }
     }
-    Serial.println(message);
-    server.send(200, "text/plain", message);  
+//   Serial.println(message);
+   server.send(200,"text/html",motor_speed_form);
   }
 }

@@ -14,7 +14,7 @@ int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
 volatile unsigned long currentLeftEncoderPulses = 0;   // Number of left Encoder pulses
 volatile unsigned long previousLeftEncoderPulses = 0;   // Number of left Encoder pulses
 int leftMotorSpeed = 0;   // speed value for leftMotor which is between 0 and 255
-AF_DCMotor leftWheel(3); // Motor 3 section of the motor shield will be used for left Motor of the robot
+AF_DCMotor leftWheel(1); // Motor 3 section of the motor shield will be used for left Motor of the robot
 
 //RIGHT WHEEL VARIABLES
 int rightEncoderPin = 19; // Pin 19, where the right ecoder pin DO is connected
@@ -28,15 +28,21 @@ volatile unsigned long debounceL = 0;   // time stamp of the last bounce of the 
 volatile unsigned long debounceR = 0;   // time stamp of the last bounce of the incoming signal from the right encoder
 
 // DESIGN VARIABLE
-const int delta = 500;    // sampling time of the system
+const int delta = 100;    // sampling time of the system
+int actualDelta = 0;
 unsigned long currentTimeSample = 0;
 unsigned long previousTimeSample = 0; 
 
 // ODOMETRY VARIABLES
+#define ARRAYSIZE 4
 const byte numberOfHole = 20; // number of holes on the motor encoder disk
 const float diameter = 6.8; // the radius of left and right wheels[cm]
-unsigned int Dl = 0;
-unsigned int Dr = 0;
+float Dl = 0; // the latest value of distance moved by the left wheel
+float arrDl[ARRAYSIZE]; // array for holding the latest distance moved by the left wheel(Dl) and some other past values
+float meanDl = 0; // the mean value of the Dl array
+float Dr = 0; // the latest value of distance moved by the right wheel
+float arrDr[ARRAYSIZE]; // array for holding the latest distance moved by the right wheel(Dl) and some other past values
+float meanDr = 0; // the mean value of the Dr array
 float Dc = 0;
 float x;  // the x position of the robot
 float y;  // the y postition of the robot
@@ -86,25 +92,25 @@ void loop () {
   
  currentTimeSample = millis();
   if(currentTimeSample - previousTimeSample > delta){
+     actualDelta = currentTimeSample - previousTimeSample;
      previousTimeSample = currentTimeSample;
     // calculate the distance traveled by both left and right wheel
       odometry();
     // calculating the velocity of both the left and the right wheel
-    Vr = (float)(1000*Dr)/delta;
-    Vl = (float)(1000*Dl)/delta;
+    Vr = (float)(1000*meanDr)/actualDelta;
+    Vl = (float)(1000*meanDl)/actualDelta;
     V = (Vr + Vl)/2;
     w = (Vr - Vl)/L;
       // for observing right wheel velocity and left wheel velocity
       Serial2.print(Vr); 
       Serial2.print(",");
-      Serial2.print(Vl);
+      Serial2.println(Vl);
       Serial2.print(",");
       Serial2.print(V);
       Serial2.print(",");
       Serial2.print(w);
       Serial2.print(",");
       Serial2.println((float)millis()/1000);
-
   
     }
 }
@@ -123,6 +129,35 @@ void REncoder () {// interrupt function of the right wheel encoder
 }
 
 
+void odometry(){
+  // median filter
+  Dl = ((float)(currentLeftEncoderPulses-previousLeftEncoderPulses)/numberOfHole) * PI * diameter;
+  previousLeftEncoderPulses = currentLeftEncoderPulses;
+  Dr = ((float)(currentRightEncoderPulses-previousRightEncoderPulses)/numberOfHole) * PI * diameter;
+  previousRightEncoderPulses = currentRightEncoderPulses;
+  byte i = 0;
+  for( i; i < ARRAYSIZE - 1; i++){
+    arrDl[i] = arrDl[i+1];
+    arrDr[i] = arrDr[i+1];
+  } 
+  arrDl[i] = Dl;
+  arrDr[i] = Dr;
+  i = 0;
+  for( i; i < ARRAYSIZE ; i++){
+    meanDl += arrDl[i];
+    meanDr += arrDr[i];
+  } 
+  meanDl /= ARRAYSIZE;
+  meanDr /= ARRAYSIZE;
+  
+  Dc = ((float)Dl+Dr)/2;
+  x = x + Dc*cos(phi);
+  y = y + Dc*sin(phi);
+  phi = phi + (Dr - Dl)/L;
+  phi = atan2(sin(phi),cos(phi));
+}
+
+
 void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
   if(WHEEL == LEFT_WHEEL){
       if(DIRECTION == FORWARD){
@@ -135,24 +170,18 @@ void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
   }else if(WHEEL == RIGHT_WHEEL){
       if(DIRECTION == FORWARD){
         rightWheel.run(FORWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);
+        }else {
+          rightWheel.setSpeed(mSpeed+30);
+        }
       }else{
         rightWheel.run(BACKWARD);
-        rightWheel.setSpeed(mSpeed);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);  
+        }else{
+          rightWheel.setSpeed(mSpeed+30);        
+        }
       }
   }
-}
-
-void odometry(){
-  // median filter
-  Dl = ((float)(currentLeftEncoderPulses-previousLeftEncoderPulses)/numberOfHole) * PI * diameter;
-  Dr = ((float)(currentRightEncoderPulses-previousRightEncoderPulses)/numberOfHole) * PI * diameter;
-  
-  Dc = ((float)Dl+Dr)/2;
-  previousLeftEncoderPulses = currentLeftEncoderPulses;
-  previousRightEncoderPulses = currentRightEncoderPulses;
-  x = x + Dc*cos(phi);
-  y = y + Dc*sin(phi);
-  phi = phi + (Dr - Dl)/L;
-  phi = atan2(sin(phi),cos(phi));
 }
