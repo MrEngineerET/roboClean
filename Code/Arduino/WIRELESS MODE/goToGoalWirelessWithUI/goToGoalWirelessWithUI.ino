@@ -69,24 +69,25 @@ float phid = 0;
 float phiErr = 0;
 float phiErrOld = 0;
 float phiErrSum = 0;
-float Kp = 20;
-float Ki = 10;
-float Kd = 5;
+float Kp = 2;
+float Ki = 0.05;
+float Kd = 0;
 // VALUES FOUND BY EMPIRICAL EXPERMENT
 const int PWMmax = 140;
-const int PWMmin = 110;
+const int PWMmin = 100;
 const int Vmax = 90;  // [cm/s]
 
 const int Wmax_V0 = 50;  // [cm/s]
 const int Vmax_W0 = 90;  // [cm/s]
 const int robotMaxSpeed = 90;  // [cm/s]
-const int robotMinSpeed = 35; // [cm/s]
+const int robotMinSpeed = 30; // [cm/s]
 
 void setup () {
    attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
    Serial2.begin(9600);
+   delay(3000);
    moveMotor(LEFT_WHEEL,FORWARD,0);
    moveMotor(RIGHT_WHEEL,FORWARD,0);
    pinMode(switchPin,INPUT_PULLUP);
@@ -113,8 +114,7 @@ void loop () {
       Serial2.print(",");
       Serial2.print(y);
       Serial2.print(","); 
-      // time is sent in milli second
-      Serial2.print((float)millis());
+      Serial2.print((float)millis()/1000);
       Serial2.print(",");
       Serial2.println(phi); 
 
@@ -140,7 +140,7 @@ void loop () {
 //          Serial.print(", ");        
 //          Serial.print(leftMotorSpeed); 
 //          Serial.print(", ");
-//          Serial.println(rightMotorSpeed);
+//          Serial.print(rightMotorSpeed);
   //        Serial.print(", ");        
   //        Serial.print(x); 
   //        Serial.print(", ");
@@ -153,11 +153,11 @@ void loop () {
 }
 
 void initialize(){
-   Xg = 200;  
+   Xg = 130; 
    Yg = 0;
    V = 50;
    x = 0; 
-   y = 50;
+   y = 0;
    phi = 0;
    phid = 0; 
    phiErr = 0;
@@ -244,7 +244,7 @@ void avoidObstacle(){
 }
 
 void goToGoal(){
-   if(abs(Xg - x) < 10 && abs(Yg - y) < 10){
+   if(abs(Xg - x) < 20 && abs(Yg - y) < 20){
       moveMotor(LEFT_WHEEL,FORWARD,0);
       moveMotor(RIGHT_WHEEL,FORWARD,0);
       return;
@@ -263,8 +263,8 @@ void goToGoal(){
 float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
 // PID controller for angular velocity of the robot
   currentErrorPIDTimeSample = millis();
-//  W = Kp * phiErr;
-  W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/(currentErrorPIDTimeSample-previousErrorPIDTimeSample));
+  W = Kp * phiErr;
+//  W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/(currentErrorPIDTimeSample-previousErrorPIDTimeSample));
   previousErrorPIDTimeSample = currentErrorPIDTimeSample;
   phiErrOld = phiErr;
   // validate if the angular velocity is ensured
@@ -274,17 +274,18 @@ float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
   rightMotorSpeed = map(Vr,robotMinSpeed,robotMaxSpeed,PWMmin,PWMmax);
   moveMotor(LEFT_WHEEL,FORWARD,leftMotorSpeed);
   moveMotor(RIGHT_WHEEL,FORWARD,rightMotorSpeed);
-   V = 60;  
+   V = 60;
+   
 }
 
 float largePhiErrorController(){ // for phiError > pi/8 or phiError < -phi/8
   if(phiErr >= PI/8){
     // move the robot in counter clockwise  
      moveMotor(LEFT_WHEEL,FORWARD,0);
-     moveMotor(RIGHT_WHEEL,FORWARD,PWMmax+10);
+     moveMotor(RIGHT_WHEEL,FORWARD,PWMmin);
   }else if(phiErr <=-PI/8){
     // move the robot in clockwise
-     moveMotor(LEFT_WHEEL,FORWARD,PWMmax+10);
+     moveMotor(LEFT_WHEEL,FORWARD,PWMmin);
      moveMotor(RIGHT_WHEEL,FORWARD,0);
   }
     phiErrSum = 0;
