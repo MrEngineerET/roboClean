@@ -3,7 +3,7 @@
 #define LEFT_WHEEL 1
 #define RIGHT_WHEEL 2
 
-#define switchPin 22
+#define switchPin 31
 int mspeed=0;
 
 AF_DCMotor leftWheel(1);

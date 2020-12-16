@@ -4,11 +4,22 @@
 #include <math.h> // required to use atan () function
 #define PI 3.1415926535897932384626433832795 // PI number definition
 #include <AFMotor.h>
+//ultrasonic 
+#include <SR04.h>
+#define ECHO_PIN 23
+#define TRIG_PIN 24
+SR04 ultrasonic = SR04(ECHO_PIN, TRIG_PIN);
+int frontDistance = 0;
+bool randomWalk = false;
 
 // MOTOR VARIABLES
 #define LEFT_WHEEL 1
 #define RIGHT_WHEEL 2
-#define switchPin 22
+#define switchPin 31
+//fans motor
+AF_DCMotor fanMotor(3);
+AF_DCMotor sweeperMototr(2);
+int runFan = 2;
 
 //LEFT WHEEL VARIABLES
 int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
@@ -22,7 +33,7 @@ int rightEncoderPin = 19; // Pin 19, where the right ecoder pin DO is connected
 volatile unsigned long currentRightEncoderPulses = 0;  // Number of right Encoder pulses
 volatile unsigned long previousRightEncoderPulses = 0;  // Number of right Encoder pulses
 int rightMotorSpeed = 0;    // speed value for rightMotor which is between 0 and 255
-AF_DCMotor rightWheel(4); // Motor 4 section of the motor shield will be used for right Motor of the robot
+AF_DCMotor rightWheel(3); // Motor 4 section of the motor shield will be used for right Motor of the robot
 
 // variable used for reading a clean and good signal from the encoder
 volatile unsigned long debounceL = 0;   // time stamp of the last bounce of the incoming signal from the left encoder
@@ -74,7 +85,7 @@ float Ki = 0.05;
 float Kd = 0;
 // VALUES FOUND BY EMPIRICAL EXPERMENT
 const int PWMmax = 140;
-const int PWMmin = 100;
+const int PWMmin = 80;
 const int Vmax = 90;  // [cm/s]
 
 const int Wmax_V0 = 50;  // [cm/s]
@@ -82,9 +93,13 @@ const int Vmax_W0 = 90;  // [cm/s]
 const int robotMaxSpeed = 90;  // [cm/s]
 const int robotMinSpeed = 30; // [cm/s]
 
+// variables for UI
+int UIPWM = 80;
+bool autonomous = false;
+
 void setup () {
-   attachInterrupt (digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
-   attachInterrupt (digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
+   attachInterrupt(digitalPinToInterrupt(leftEncoderPin), LEncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
+   attachInterrupt(digitalPinToInterrupt(rightEncoderPin), REncoder, RISING); // interrupt function: interrupt pin, function to call, type of activation
    Serial.begin(9600); // start of serial communication
    Serial2.begin(9600);
    delay(3000);
@@ -96,12 +111,23 @@ void setup () {
 }
 
 void loop () {
+  if(Serial2.available()>0){
+    String str = Serial2.readStringUntil("\n");
+    Serial.print("incoming message: ");
+    Serial.println(str);
+    str.trim();
+    if(noComma(str)){
+      handleNoCommaCodes(str);
+    }else{
+      handleCommaCodes(str);
+    }
+  }
   if(digitalRead(switchPin) == 1){
       moveMotor(LEFT_WHEEL,FORWARD,0);
       moveMotor(RIGHT_WHEEL,FORWARD,0);
       initialize();
       delay(3000);
-   }else{
+  }else if(autonomous == true){
     currentTimeSample = millis();
     if(currentTimeSample - previousTimeSample > delta){
        previousTimeSample = currentTimeSample;
@@ -109,52 +135,26 @@ void loop () {
        odometry();
       
        goToGoal();
-//  
-      Serial2.print(x); 
-      Serial2.print(",");
-      Serial2.print(y);
-      Serial2.print(","); 
-      Serial2.print((float)millis()/1000);
-      Serial2.print(",");
-      Serial2.println(phi); 
-
-//        Serial2.println("message from go to goal wireless");
-
-//      Serial.print(x); 
-//      Serial.print(",");
-//      Serial.print(y);
-//      Serial.print(","); 
-//      Serial.print((float)millis()/1000);
-//      Serial.print(",");
-//      Serial.println(phi); 
-
-  //        Serial.print(phid); 
-  //        Serial.print(", ");
-  //        Serial.print(phiErr); 
-  //        Serial.print(", ");
-  //        Serial.print(W); 
-  //        Serial.print(", ");
-//          Serial.print(Vl); 
-//          Serial.print(", ");
-//          Serial.print(Vr); 
-//          Serial.print(", ");        
-//          Serial.print(leftMotorSpeed); 
-//          Serial.print(", ");
-//          Serial.print(rightMotorSpeed);
-  //        Serial.print(", ");        
-  //        Serial.print(x); 
-  //        Serial.print(", ");
-  //        Serial.println(y);
-          
-        // for observing the angular velocity of the robot
-        // Serial.println(W);
       }
    }
+   else if(randomWalk == true){
+      frontDistance = ultrasonic.DistanceAvg();
+      Serial.println(frontDistance);
+      if(frontDistance> 40){
+        moveMotor(LEFT_WHEEL,FORWARD,80);
+        moveMotor(RIGHT_WHEEL,FORWARD,80);
+        delay(10);
+      }else{
+        moveMotor(LEFT_WHEEL,FORWARD,120);
+        moveMotor(RIGHT_WHEEL,FORWARD,0);
+        delay(1000);
+      }
+    }
 }
 
 void initialize(){
-   Xg = 130; 
-   Yg = 0;
+   Xg = 150; 
+   Yg = 150;
    V = 50;
    x = 0; 
    y = 0;
@@ -168,6 +168,8 @@ void initialize(){
    W = 0; 
    currentTimeSample = 0;
    previousTimeSample = 0; 
+   autonomous = false;
+   fanMotor.setSpeed(0);
 }
 
 void LEncoder () {// interrupt function of the left wheel encoder
@@ -183,33 +185,6 @@ void REncoder () {// interrupt function of the right wheel encoder
     }
 }
 
-void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
-  if(WHEEL == LEFT_WHEEL){
-      if(DIRECTION == FORWARD){
-        leftWheel.run(FORWARD);
-        leftWheel.setSpeed(mSpeed);
-      }else{
-        leftWheel.run(BACKWARD);
-        leftWheel.setSpeed(mSpeed);
-      }
-  }else if(WHEEL == RIGHT_WHEEL){
-      if(DIRECTION == FORWARD){
-        rightWheel.run(FORWARD);
-        if(mSpeed == 0){
-          rightWheel.setSpeed(mSpeed);
-        }else {
-          rightWheel.setSpeed(mSpeed+30);
-        }
-      }else{
-        rightWheel.run(BACKWARD);
-        if(mSpeed == 0){
-          rightWheel.setSpeed(mSpeed);  
-        }else{
-          rightWheel.setSpeed(mSpeed+30);        
-        }
-      }
-  }
-}
 
 void odometry(){
   // median filter
@@ -317,4 +292,165 @@ void ensure_W(){
     Vl = Vl_d;
     Vr = Vr_d;  
   }
+}
+
+void moveMotor(int WHEEL,int DIRECTION, int mSpeed){
+  if(WHEEL == LEFT_WHEEL){
+      if(DIRECTION == FORWARD){
+        leftWheel.run(FORWARD);
+        leftWheel.setSpeed(mSpeed);
+        fanMotor.run(FORWARD);
+        if(mSpeed == 0){
+            fanMotor.setSpeed(0);
+        }else{
+            fanMotor.setSpeed(150);
+        }
+      }else{
+        leftWheel.run(BACKWARD);
+        leftWheel.setSpeed(mSpeed);
+      }
+  }else if(WHEEL == RIGHT_WHEEL){
+      if(DIRECTION == FORWARD){
+        rightWheel.run(FORWARD);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);
+            fanMotor.setSpeed(0);
+        }else {
+          rightWheel.setSpeed(mSpeed+30);
+          fanMotor.run(FORWARD);
+          fanMotor.setSpeed(150);
+          runFan = 2;
+        }
+      }else{
+        rightWheel.run(BACKWARD);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);  
+        }else{
+          rightWheel.setSpeed(mSpeed+30);        
+        }
+      }
+  }
+}
+
+void driveMotor(int WHEEL,int DIRECTION, int mSpeed){
+  if(WHEEL == LEFT_WHEEL){
+      if(DIRECTION == FORWARD){
+        leftWheel.run(FORWARD);
+        leftWheel.setSpeed(mSpeed);
+      }else{
+        leftWheel.run(BACKWARD);
+        leftWheel.setSpeed(mSpeed);
+      }
+  }else if(WHEEL == RIGHT_WHEEL){
+      if(DIRECTION == FORWARD){
+        rightWheel.run(FORWARD);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);
+        }else {
+          rightWheel.setSpeed(mSpeed+30);
+        }
+      }else{
+        rightWheel.run(BACKWARD);
+        if(mSpeed == 0){
+          rightWheel.setSpeed(mSpeed);  
+        }else{
+          rightWheel.setSpeed(mSpeed+30);        
+        }
+      }
+  }
+}
+
+int noComma(String str){;
+  if(str.indexOf(',') == -1)return true;
+  else return false;
+}
+void handleNoCommaCodes(String str){
+  Serial.println("handle No commas codes");
+    if(str == "33"){
+      startRandomWalk();
+    }else if(str == "22"){
+      falseAutoRandom();
+      driveMotor(LEFT_WHEEL,FORWARD,UIPWM);
+      driveMotor(RIGHT_WHEEL,FORWARD,UIPWM);
+    }else if(str == "02"){
+      falseAutoRandom();
+      driveMotor(LEFT_WHEEL,BACKWARD,UIPWM);
+      driveMotor(RIGHT_WHEEL,BACKWARD,UIPWM);
+    }else if(str == "03"){
+      falseAutoRandom();
+      driveMotor(LEFT_WHEEL,FORWARD,0);
+      driveMotor(RIGHT_WHEEL,FORWARD,UIPWM+10);
+    }else if(str == "04"){
+      falseAutoRandom();
+      driveMotor(LEFT_WHEEL,FORWARD,UIPWM+10);
+      driveMotor(RIGHT_WHEEL,FORWARD,0);
+    }else if(str == "05"){
+      falseAutoRandom();
+      driveMotor(LEFT_WHEEL,FORWARD,0);
+      driveMotor(RIGHT_WHEEL,FORWARD,0);
+    }else if(str == "06"){
+      initialize();
+      autonomous = true;
+      randomWalk = false;
+    }else if(str == "07"){
+      stopAutonomous();
+    }else if(str == "08"){
+// go staight line
+    }else if(str == "09"){
+      Serial.println("code 09");
+      driveMotor(LEFT_WHEEL,FORWARD,120);
+      driveMotor(RIGHT_WHEEL,FORWARD,120);
+      delay(1000);
+      driveMotor(LEFT_WHEEL,FORWARD,0);
+      driveMotor(RIGHT_WHEEL,FORWARD,0);
+  }
+}
+
+void handleCommaCodes(String str){
+    String code = getCodeFromCommaString(str);
+    if(code == "10"){
+      //parseAndSetPIDparameters
+      short indexes[4];
+      String param[4]; 
+      indexes[0] = str.indexOf(',');
+      param[0] = str.substring(0,indexes[0]);
+      param[0].trim();
+  for(byte i = 1; i < 4; i++){
+     indexes[i] = str.indexOf(',',indexes[i-1]+1);
+     param[i] = str.substring(indexes[i-1]+1,indexes[i]);
+     param[i].trim();
+  }
+    Kp = param[1].toInt();
+    Ki = param[2].toInt();
+    Kd = param[3].toInt();
+    Serial.println("configration page in");
+    Serial.println(Kp);
+    Serial.println(Ki);
+    Serial.println(Kd);
+    }else if(code == "11"){
+//      parse and set motor speed value
+        int index1,speedVal;
+        index1 = str.indexOf(',');
+        speedVal = str.substring(index1+1).toInt();
+        moveMotor(LEFT_WHEEL,FORWARD,speedVal);
+        moveMotor(RIGHT_WHEEL,FORWARD,speedVal);
+    }  
+}
+String getCodeFromCommaString(String str){
+     int indexes = str.indexOf(',');
+     String code = str.substring(0,indexes);
+     code.trim();
+     return code;
+}
+void startRandomWalk(){
+  autonomous = false;
+  randomWalk = true;
+}
+void falseAutoRandom(){
+  autonomous = false;
+  randomWalk = false;
+  }
+void stopAutonomous(){
+autonomous = false;
+initialize();
 }

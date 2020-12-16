@@ -8,7 +8,7 @@
 // MOTOR VARIABLES
 #define LEFT_WHEEL 1
 #define RIGHT_WHEEL 2
-#define switchPin 22
+#define switchPin 31
 
 //LEFT WHEEL VARIABLES
 int leftEncoderPin = 18; // Pin 18, where the left encoder pin DO is connected
@@ -154,7 +154,7 @@ void loop () {
 
 void initialize(){
    Xg = 200;  
-   Yg = 0;
+   Yg = 50;
    V = 50;
    x = 0; 
    y = 50;
@@ -299,8 +299,8 @@ void ensure_W(){
   V = max(min(V ,Vmax_W0), -Vmax_W0);
   W = max(min(W, Wmax_V0), -Wmax_V0);
    // unicycle( v,w) to differential (Vl,Vr)
-  float Vl_d = (2*V - W*L)/2;
-  float Vr_d = (2*V + W*L)/2;
+  float Vl_d = (2*V - W*L)/diameter;
+  float Vr_d = (2*V + W*L)/diameter;
   //  Find the max and min 
   float V_rl_max = max(Vr_d, Vl_d);
   float V_rl_min = min(Vr_d, Vl_d); 

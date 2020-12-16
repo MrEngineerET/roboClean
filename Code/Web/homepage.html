@@ -4,26 +4,155 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Page</title>
-<style>
-html { 
-    font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}
-    body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;} h3 {color: #444444;margin-bottom: 50px;}
-    .button {display: block;width: 80px;background-color: #1abc9c;border: none;color: white;padding: 13px 30px;text-decoration: none;font-size: 25px;margin: 0px auto 35px;cursor: pointer;border-radius: 4px;}
-    .button-on {background-color: #1abc9c;}
-    .button-on:active {background-color: #16a085;}
-    .button-off {background-color: #34495e;}
-    .button-off:active {background-color: #2c3e50;}
-    p {font-size: 14px;color: #888;margin-bottom: 10px;}
-</style>
 </head>
 <body>
-    <h1>Robo Clean</h1>
-    <h2> Position of the robot </h2>
-    <p> position X : 
-    <br>
-        position Y : 
-    <br>
-        theta       :    
-     </p>
+    <nav>
+        <a href="#">Home Page</a>
+        <a href="about">About</a>
+        <a href="/control">Control</a>
+    </nav>
+
+    <div id="top">
+        <h1>Robo Clean</h1>
+        <p>
+            <form action="/SpeedValue", method="post">
+            <span>Set PWM: </span> 
+            <input type="number" step="1", name="motorSpeed" id="text">
+            <input type="submit" value="Run" id="run">
+        </form>
+        </p>
+    </div>
+    <div id="bottom">
+        <p class="c">Controls</p>
+        <form action="/buttons">
+            <div id="buttons">
+                <button id="up", type="submit">Up</button><br>
+                <button id="left" type="submit">Left</button>
+                <button id="right" type="submit">Right</button><br><br><br>
+                <button id="down" type="submit">Down</button>
+            </div><br>
+        </form>
+        <p class="mimenan">V : 34m/s</p>
+        <p class="mimenan1">w : 5rad/s</p>
+        <p id="upButtonData"></p>
+    </div>
+    <style>
+        body{
+            width: 320px;
+            height: 600px;
+            margin:auto;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color:rgb(225, 237, 238) ;
+        }
+        #top{
+            margin-top: 100px;
+            width: 300px;
+            height:120px;
+            background-color:white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 5px 5px 7px gray;
+        }
+        h1{
+            font-size: 30px;
+            text-align: center;
+            color: hsl(179, 72%, 30%);
+        }
+        p{
+            text-align: center;
+        }
+        .c, .mimenan,.mimenan1{
+            color: white;
+            font-size: 20px;
+            font-weight: bolder;
+        }
+        #bottom{
+            width: 300px;
+            height: 300px;
+            margin-top: 15px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            background-color: rgb(26, 136, 139);
+            box-shadow: 3px 3px 10px black;
+        }
+        #run{
+            width: 50px;
+            height: 25px;
+            border-radius: 10px;
+            background-color: hsl(179, 62%, 43%);
+            color: rgb(225, 237, 238)
+        }
+        #up, #left, #right, #down{
+            width: 100px;
+            height: 50px;
+            border-radius: 15px;
+            background-color: hsl(187, 73%, 54%);
+            color: white;
+            font-weight: bold;
+        }
+        #up{
+            align-items: center;
+        }
+        #left{
+            float: left;
+            clear: left;
+        }
+        #right {
+            float: right;
+        }
+        #down{
+            align-items: center;
+            
+        }
+        input#text{
+            border-radius: 5px;
+        }
+        span{
+            font-weight: bold;
+        }
+        #buttons{
+            margin-top: 20px;
+        }
+        button{
+            box-shadow: 3px 3px 10px  hsl(178, 90%, 8%);
+        }
+        .mimenan, .mimenan1{
+            margin: 1px;
+            float: left;
+            clear: left;
+            font-size: 20px;
+            font-weight: bold;           
+        }
+    </style>
+    <script>
+        let stop;
+        let entryTime = 0;
+        // document.getElementById("up").onclick = function UpBottonClicked(){
+        //     document.getElementById("upButtonData").innerHTML = "pressed";
+        // }
+        document.getElementById("up").onmousedown = function UpBottonHold(){
+            stop = setInterval(function(){
+                document.getElementById("upButtonData").innerHTML = entryTime;
+                entryTime ++;yy
+            },1000)
+        }
+        document.getElementById("up").onmouseup = function UpBottonReleased(){
+            clearInterval(stop)
+            entryTime = 0;
+        }
+        
+    </script>
 </body>
 </html>
+
+
+
+<div id="buttons">
+    <a><button href="/upButton">Up</button></a><br>
+    <a><button href="/leftButton">Left</button></a>
+    <a><button href="/rightButton">Right</button></a><br><br><br>
+    <a><button href="/downButton"></button>Down</button></a>
+</div><br>
