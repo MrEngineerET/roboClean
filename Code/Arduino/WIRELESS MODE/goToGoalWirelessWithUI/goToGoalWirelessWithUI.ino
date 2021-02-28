@@ -80,21 +80,21 @@ float phid = 0;
 float phiErr = 0;
 float phiErrOld = 0;
 float phiErrSum = 0;
-float Kp = 2;
-float Ki = 0.05;
-float Kd = 0;
+float Kp = 10;
+float Ki = 5;
+float Kd = 2;
 // VALUES FOUND BY EMPIRICAL EXPERMENT
 const int PWMmax = 140;
-const int PWMmin = 80;
+const int PWMmin = 100;
 const int Vmax = 90;  // [cm/s]
 
 const int Wmax_V0 = 50;  // [cm/s]
-const int Vmax_W0 = 90;  // [cm/s]
+const int Vmax_W0 = 90;  // [cm/s]+++-*
 const int robotMaxSpeed = 90;  // [cm/s]
 const int robotMinSpeed = 30; // [cm/s]
 
 // variables for UI
-int UIPWM = 80;
+int UIPWM = 100;
 bool autonomous = false;
 
 void setup () {
@@ -135,12 +135,31 @@ void loop () {
        odometry();
       
        goToGoal();
+       
+      Serial2.print(x); 
+      Serial2.print(",");
+      Serial2.print(y);
+      Serial2.print(","); 
+      // time is sent in milli second
+      Serial2.print((float)millis());
+      Serial2.print(",");
+      Serial2.println(phi); 
+
+//      Serial.print(x); 
+//      Serial.print(",");
+//      Serial.print(y);
+//      Serial.print(","); 
+//      // time is sent in milli second
+//      Serial.print((float)millis());
+//      Serial.print(",");
+//      Serial.println(phi); 
+
       }
    }
    else if(randomWalk == true){
       frontDistance = ultrasonic.DistanceAvg();
       Serial.println(frontDistance);
-      if(frontDistance> 40){
+      if(frontDistance> 80){
         moveMotor(LEFT_WHEEL,FORWARD,80);
         moveMotor(RIGHT_WHEEL,FORWARD,80);
         delay(10);
@@ -154,8 +173,8 @@ void loop () {
 
 void initialize(){
    Xg = 150; 
-   Yg = 150;
-   V = 50;
+   Yg = 0;
+   V = 45;
    x = 0; 
    y = 0;
    phi = 0;
@@ -219,7 +238,7 @@ void avoidObstacle(){
 }
 
 void goToGoal(){
-   if(abs(Xg - x) < 20 && abs(Yg - y) < 20){
+   if(abs(Xg - x) < 25 && abs(Yg - y) < 25){
       moveMotor(LEFT_WHEEL,FORWARD,0);
       moveMotor(RIGHT_WHEEL,FORWARD,0);
       return;
@@ -238,8 +257,8 @@ void goToGoal(){
 float smallPhiErrorController(){ // for phiError < pi/8 or phiError > -phi/8
 // PID controller for angular velocity of the robot
   currentErrorPIDTimeSample = millis();
-  W = Kp * phiErr;
-//  W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/(currentErrorPIDTimeSample-previousErrorPIDTimeSample));
+//  W = Kp * phiErr;
+  W = Kp * phiErr + Ki*phiErrSum + Kd*((phiErr-phiErrOld)/(currentErrorPIDTimeSample-previousErrorPIDTimeSample));
   previousErrorPIDTimeSample = currentErrorPIDTimeSample;
   phiErrOld = phiErr;
   // validate if the angular velocity is ensured
@@ -393,7 +412,8 @@ void handleNoCommaCodes(String str){
       autonomous = true;
       randomWalk = false;
     }else if(str == "07"){
-      stopAutonomous();
+      initialize();
+      falseAutoRandom();
     }else if(str == "08"){
 // go staight line
     }else if(str == "09"){
@@ -450,7 +470,3 @@ void falseAutoRandom(){
   autonomous = false;
   randomWalk = false;
   }
-void stopAutonomous(){
-autonomous = false;
-initialize();
-}

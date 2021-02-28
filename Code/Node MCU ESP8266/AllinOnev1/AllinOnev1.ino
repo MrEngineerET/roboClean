@@ -15,6 +15,7 @@ IPAddress subnet_mask(255,255,255,0);
 ESP8266WebServer server(80);
 
 String distances[5],message;
+String x,y,t,theta ;
 
 const char homePage[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
@@ -444,7 +445,7 @@ void setup(){
   WiFi.softAP(ssid,password);
   WiFi.softAPConfig(local_ip, gateway, subnet_mask);
   delay(100);
-
+  
   server.on("/",handleHomePage);
   server.on("/speedValue",handlePostSpeedValue);
   server.on("/config",handleConfigPage);
@@ -461,13 +462,33 @@ void setup(){
   server.on("/configrationValues",handlePostConfigrationValue);
   server.on("/goStraightLine",handleGoStraitLine);
   server.on("/randomWalk",handleRandomWalk);
+  server.on("/pose",handleMatlabJSON);   
   server.begin();
   Serial.println("HTTP Server Started");
+
+  x = y = t = theta = "0.0";
 }
 
 void loop(){
    server.handleClient();
-   delay(10);
+  if (arduinoSerial.available()>0){
+      message  = arduinoSerial.readStringUntil('\n');
+      int ind1 = message.indexOf(',');
+      x = message.substring(0,ind1);
+      int ind2 = message.indexOf(',',ind1+1);
+      y = message.substring(ind1+1,ind2);
+      int ind3 = message.indexOf(',',ind2+1);
+      t = message.substring(ind2+1,ind3);
+      int ind4 = message.indexOf(',',ind3+1);
+      theta = message.substring(ind3+1,ind4);
+  }
+}
+void handleMatlabJSON(){
+  String ptr = "{\"x\":"+ x +",\n";
+  ptr += "\"y\":"+ y +",\n";
+  ptr += "\"time\":"+ t +",\n";
+  ptr += "\"theta\":"+ theta +"}"; 
+  server.send(200,"application/json",ptr);
 }
 
 void handlePostConfigrationValue(){

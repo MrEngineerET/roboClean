@@ -22,7 +22,7 @@ int rightEncoderPin = 19; // Pin 19, where the right ecoder pin DO is connected
 volatile unsigned long currentRightEncoderPulses = 0;  // Number of right Encoder pulses
 volatile unsigned long previousRightEncoderPulses = 0;  // Number of right Encoder pulses
 int rightMotorSpeed = 0;    // speed value for rightMotor which is between 0 and 255
-AF_DCMotor rightWheel(4); // Motor 4 section of the motor shield will be used for right Motor of the robot
+AF_DCMotor rightWheel(3); // Motor 4 section of the motor shield will be used for right Motor of the robot
 
 // variable used for reading a clean and good signal from the encoder
 volatile unsigned long debounceL = 0;   // time stamp of the last bounce of the incoming signal from the left encoder
@@ -153,7 +153,7 @@ void loop () {
 }
 
 void initialize(){
-   Xg = 200;  
+   Xg = 150;  
    Yg = 50;
    V = 50;
    x = 0; 

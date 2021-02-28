@@ -10,6 +10,8 @@ hold on
 ylabel('theta(radian)');
 hold on;
 counter = 1;
+webread('http://192.168.1.1/startAuto');
+pause(2);
 while counter < 100
     str = webread('http://192.168.1.1/pose');
    time = str.time;
